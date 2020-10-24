@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ar_user_declined_install">AR Core is required to run this application.</string>
+    <string name="ar_not_installed">AR Core is not installed.</string>
+    <string name="ar_apk_too_old">The installed android APK is too old for AR Core.</string>
+    <string name="ar_sdk_too_old">The android SDK is too old for AR Core.</string>
+    <string name="ar_device_incompatible">The device is incompatible with AR Core.</string>
+</resources>
