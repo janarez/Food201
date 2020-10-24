@@ -44,27 +44,27 @@ public final class ARCheckerHelper {
         } catch (UnavailableUserDeclinedInstallationException e) {
             Toast.makeText(boundActivity, R.string.ar_user_declined_install, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.d(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_user_declined_install), e);
         } catch (UnavailableArcoreNotInstalledException e) {
             Toast.makeText(boundActivity, R.string.ar_not_installed, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_not_installed), e);
         } catch (UnavailableApkTooOldException e) {
             Toast.makeText(boundActivity, R.string.ar_apk_too_old, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_apk_too_old), e);
         } catch (UnavailableSdkTooOldException e) {
             Toast.makeText(boundActivity, R.string.ar_sdk_too_old, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_sdk_too_old), e);
         } catch (UnavailableDeviceNotCompatibleException e) {
             Toast.makeText(boundActivity, R.string.ar_device_incompatible, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_device_incompatible), e);
         } catch (Exception e) {
             Toast.makeText(boundActivity, R.string.general_exception, Toast.LENGTH_LONG)
                     .show();
-            Log.d(ARCheckerHelper.class.getName(), e.getMessage());
+            Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.general_exception), e);
         }
     }
 }
