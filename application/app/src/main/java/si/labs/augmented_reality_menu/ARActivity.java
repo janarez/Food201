@@ -7,11 +7,13 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.camera.CameraHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
 public class ARActivity extends AppCompatActivity {
 
     private ARCheckerHelper arCheckerHelper;
+    private CameraHelper cameraHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,18 +21,15 @@ public class ARActivity extends AppCompatActivity {
         setContentView(R.layout.activity_a_r);
 
         arCheckerHelper = new ARCheckerHelper(this);
+        cameraHelper = new CameraHelper(this, arCheckerHelper);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        // ARCore requires camera permission to operate.
-        if (!CameraPermissionHelper.hasCameraPermission(this)) {
-            CameraPermissionHelper.requestCameraPermission(this);
-        }
-
         arCheckerHelper.requestInstall();
+        cameraHelper.onActivityResume();
     }
 
     @Override

@@ -12,9 +12,11 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
+import java.util.EnumSet;
+
 import si.labs.augmented_reality_menu.R;
 
-public final class ARCheckerHelper {
+public class ARCheckerHelper {
     private final Activity boundActivity;
     private Session session;
     private boolean mUserRequestedInstall = true;
@@ -35,7 +37,7 @@ public final class ARCheckerHelper {
         try {
             switch (ArCoreApk.getInstance().requestInstall(boundActivity, mUserRequestedInstall)) {
                 case INSTALLED:
-                    session = new Session(boundActivity);
+                    session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
                     break;
                 case INSTALL_REQUESTED:
                     mUserRequestedInstall = false;
