@@ -1,20 +1,27 @@
 package si.labs.augmented_reality_menu.helpers.camera;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
 
 import com.google.ar.core.SharedCamera;
 
+import si.labs.augmented_reality_menu.R;
 import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
 public class CameraHelper {
-    private final String cameraBackgroundThreadName = "sharedCameraBackground";
+    private static final String cameraBackgroundThreadName = "sharedCameraBackground";
 
     private final Activity boundActivity;
 
@@ -75,8 +82,16 @@ public class CameraHelper {
         if (!CameraPermissionHelper.hasCameraPermission(boundActivity)) {
             CameraPermissionHelper.requestCameraPermission(boundActivity);
         }
-
-        // Open the camera device using the ARCore wrapped callback.
-        cameraManager.openCamera(sharedCameraId, wrappedCallback, backgroundHandler);
+        try {
+            cameraManager.openCamera(sharedCameraId, wrappedCallback, backgroundHandler);
+        } catch (SecurityException e) {
+            Log.e(CameraHelper.class.getName(), "Camera permission was not granted", e);
+            Toast.makeText(boundActivity, R.string.camera_permission_not_granted, Toast.LENGTH_LONG)
+                    .show();
+        } catch (CameraAccessException e) {
+            Log.e(CameraHelper.class.getName(), "Exception while trying to access the camera", e);
+            Toast.makeText(boundActivity, R.string.camera_can_not_access, Toast.LENGTH_LONG)
+                    .show();
+        }
     }
 }

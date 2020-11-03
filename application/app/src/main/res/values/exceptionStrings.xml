@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="general_exception">Unknown exception occurred.</string>
+    <string name="camera_permission_not_granted">No permission to open camera</string>
+    <string name="camera_can_not_access">Can not access camera</string>
 </resources>
