@@ -24,26 +24,28 @@ public class CameraHelper {
     private static final String cameraBackgroundThreadName = "sharedCameraBackground";
 
     private final Activity boundActivity;
+    private final ARCheckerHelper arCheckerHelper;
 
-    private final SharedCamera sharedCamera;
-    private final String sharedCameraId;
-    private final CameraDeviceCallback cameraDeviceCallback;
-    private final CameraManager cameraManager;
+    private SharedCamera sharedCamera;
+    private String sharedCameraId;
+    private CameraDeviceCallback cameraDeviceCallback;
+    private CameraManager cameraManager;
 
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
 
     public CameraHelper(Activity activity, ARCheckerHelper arCheckerHelper) {
         this.boundActivity = activity;
+        this.arCheckerHelper = arCheckerHelper;
+    }
 
+    public void onActivityResume() {
         this.sharedCamera = arCheckerHelper.getSession().getSharedCamera();
         this.sharedCameraId = arCheckerHelper.getSession().getCameraConfig().getCameraId();
         this.cameraDeviceCallback = new CameraDeviceCallback();
         // Store a reference to the camera system service.
         this.cameraManager = (CameraManager) boundActivity.getSystemService(Context.CAMERA_SERVICE);
-    }
 
-    public void onActivityResume() {
         startBackgroundThread();
         openCamera();
     }
