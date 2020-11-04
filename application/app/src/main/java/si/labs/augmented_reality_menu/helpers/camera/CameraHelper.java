@@ -14,6 +14,7 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.google.ar.core.SharedCamera;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
 
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class CameraHelper {
         this.sharedCamera = arCheckerHelper.getSession().getSharedCamera();
         this.sharedCameraId = arCheckerHelper.getSession().getCameraConfig().getCameraId();
         this.cameraDeviceStateCallback = new CameraDeviceStateCallback(this::createCameraPreviewSession);
-        cameraSessionStateCallback = new CameraSessionStateCallback();
+        cameraSessionStateCallback = new CameraSessionStateCallback(this::setRepeatingCaptureRequest, this::resumeARCore);
 
         // Store a reference to the camera system service.
         this.cameraManager = (CameraManager) boundActivity.getSystemService(Context.CAMERA_SERVICE);
@@ -114,14 +115,30 @@ public class CameraHelper {
             CameraCaptureSession.StateCallback wrappedCallback = sharedCamera.createARSessionStateCallback(cameraSessionStateCallback, backgroundHandler);
             cameraDeviceStateCallback.getCameraDevice().createCaptureSession(surfaceList, wrappedCallback, backgroundHandler);
         } catch (CameraAccessException e) {
-            e.printStackTrace();
+            Log.e(CameraHelper.class.getName(), "Exception while trying to access the camera", e);
+            Toast.makeText(boundActivity, R.string.camera_can_not_access, Toast.LENGTH_LONG)
+                    .show();
         }
     }
 
-    private void setRepeatingCaptureRequest() throws CameraAccessException {
-        //TODO use this in the CameraCaptureSession.StateCallback, activate AR core and add this method
-        // follow https://developers.google.com/ar/develop/java/camera-sharing
-        cameraSessionStateCallback.getCameraCaptureSession()
-                .setRepeatingRequest(captureRequest, new CameraCaptureSessionCaptureCallback(),backgroundHandler);
+    private void setRepeatingCaptureRequest() {
+        try {
+            cameraSessionStateCallback.getCameraCaptureSession()
+                    .setRepeatingRequest(captureRequest, new CameraCaptureSessionCaptureCallback(),backgroundHandler);
+        } catch (CameraAccessException e) {
+            Log.e(CameraHelper.class.getName(), "Exception while trying to access the camera", e);
+            Toast.makeText(boundActivity, R.string.camera_can_not_access, Toast.LENGTH_LONG)
+                    .show();
+        }
+    }
+
+    private void resumeARCore() {
+        try {
+            arCheckerHelper.getSession().resume();
+        } catch (CameraNotAvailableException e) {
+            Log.e(CameraHelper.class.getName(), "Camera not available", e);
+            Toast.makeText(boundActivity, R.string.camera_not_available, Toast.LENGTH_LONG)
+                    .show();
+        }
     }
 }
