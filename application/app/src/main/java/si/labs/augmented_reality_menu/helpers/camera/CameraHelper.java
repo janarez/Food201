@@ -1,20 +1,21 @@
 package si.labs.augmented_reality_menu.helpers.camera;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.view.Surface;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
-
 import com.google.ar.core.SharedCamera;
+
+import java.util.List;
 
 import si.labs.augmented_reality_menu.R;
 import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
@@ -28,8 +29,10 @@ public class CameraHelper {
 
     private SharedCamera sharedCamera;
     private String sharedCameraId;
-    private CameraDeviceCallback cameraDeviceCallback;
+    private CameraDeviceStateCallback cameraDeviceStateCallback;
+    private CameraSessionStateCallback cameraSessionStateCallback;
     private CameraManager cameraManager;
+    private CaptureRequest captureRequest;
 
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
@@ -42,10 +45,11 @@ public class CameraHelper {
     public void onActivityResume() {
         this.sharedCamera = arCheckerHelper.getSession().getSharedCamera();
         this.sharedCameraId = arCheckerHelper.getSession().getCameraConfig().getCameraId();
-        this.cameraDeviceCallback = new CameraDeviceCallback();
+        this.cameraDeviceStateCallback = new CameraDeviceStateCallback(this::createCameraPreviewSession);
+        cameraSessionStateCallback = new CameraSessionStateCallback();
+
         // Store a reference to the camera system service.
         this.cameraManager = (CameraManager) boundActivity.getSystemService(Context.CAMERA_SERVICE);
-
         startBackgroundThread();
         openCamera();
     }
@@ -75,10 +79,10 @@ public class CameraHelper {
         }
     }
 
-    public void openCamera() {
+    private void openCamera() {
         // Wrap our callback in a shared camera callback.
         CameraDevice.StateCallback wrappedCallback =
-                sharedCamera.createARDeviceStateCallback(cameraDeviceCallback, backgroundHandler);
+                sharedCamera.createARDeviceStateCallback(cameraDeviceStateCallback, backgroundHandler);
 
         // ARCore requires camera permission to operate.
         if (!CameraPermissionHelper.hasCameraPermission(boundActivity)) {
@@ -95,5 +99,29 @@ public class CameraHelper {
             Toast.makeText(boundActivity, R.string.camera_can_not_access, Toast.LENGTH_LONG)
                     .show();
         }
+    }
+
+    private void createCameraPreviewSession() {
+        try {
+            CaptureRequest.Builder builder = cameraDeviceStateCallback.getCameraDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+            List<Surface> surfaceList = sharedCamera.getArCoreSurfaces();
+
+            for (Surface surface : surfaceList) {
+                builder.addTarget(surface);
+            }
+
+            captureRequest = builder.build();
+            CameraCaptureSession.StateCallback wrappedCallback = sharedCamera.createARSessionStateCallback(cameraSessionStateCallback, backgroundHandler);
+            cameraDeviceStateCallback.getCameraDevice().createCaptureSession(surfaceList, wrappedCallback, backgroundHandler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setRepeatingCaptureRequest() throws CameraAccessException {
+        //TODO use this in the CameraCaptureSession.StateCallback, activate AR core and add this method
+        // follow https://developers.google.com/ar/develop/java/camera-sharing
+        cameraSessionStateCallback.getCameraCaptureSession()
+                .setRepeatingRequest(captureRequest, new CameraCaptureSessionCaptureCallback(),backgroundHandler);
     }
 }
