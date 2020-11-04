@@ -1,10 +1,12 @@
 package si.labs.augmented_reality_menu.helpers;
 
 import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Config;
 import com.google.ar.core.Session;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
@@ -38,6 +40,13 @@ public class ARCheckerHelper {
             switch (ArCoreApk.getInstance().requestInstall(boundActivity, mUserRequestedInstall)) {
                 case INSTALLED:
                     session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
+                    Config config = session.getConfig();
+                    if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+                        config.setDepthMode(Config.DepthMode.AUTOMATIC);
+                        Log.i(ARCheckerHelper.class.getName(), "Depth mode activated");
+                    } else {
+                        Log.e(ARCheckerHelper.class.getName(), "Depth mode not available");
+                    }
                     break;
                 case INSTALL_REQUESTED:
                     mUserRequestedInstall = false;
