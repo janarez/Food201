@@ -9,12 +9,18 @@ import java.util.Locale;
 
 public class CameraDeviceCallback extends CameraDevice.StateCallback {
     private CameraDevice cameraDevice;
+    private final Runnable onCameraOpen;
+
+    public CameraDeviceCallback(Runnable onCameraOpen) {
+        this.onCameraOpen = onCameraOpen;
+    }
 
     @Override
     public void onOpened(@NonNull CameraDevice camera) {
         String logMessage =  String.format("Camera with id %s opened", camera.getId());
         Log.d(CameraDeviceCallback.class.getName(), logMessage);
         this.cameraDevice = camera;
+        onCameraOpen.run();
     }
 
     @Override
