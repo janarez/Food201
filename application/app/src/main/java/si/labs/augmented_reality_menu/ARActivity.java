@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.FullScreenHelper;
 import si.labs.augmented_reality_menu.helpers.camera.CameraHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
@@ -36,6 +37,12 @@ public class ARActivity extends AppCompatActivity {
         arCheckerHelper.requestInstall();
         cameraHelper.onActivityResume();
         surfaceView.onResume();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        FullScreenHelper.setFullScreenOnWindowFocusChanged(this, hasFocus);
     }
 
     @Override
