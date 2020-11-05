@@ -41,12 +41,7 @@ public class ARCheckerHelper {
                 case INSTALLED:
                     session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
                     Config config = session.getConfig();
-                    if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                        config.setDepthMode(Config.DepthMode.AUTOMATIC);
-                        Log.i(ARCheckerHelper.class.getName(), "Depth mode activated");
-                    } else {
-                        Log.e(ARCheckerHelper.class.getName(), "Depth mode not available");
-                    }
+                    config.setInstantPlacementMode(Config.InstantPlacementMode.LOCAL_Y_UP);
                     break;
                 case INSTALL_REQUESTED:
                     mUserRequestedInstall = false;
@@ -76,6 +71,13 @@ public class ARCheckerHelper {
             Toast.makeText(boundActivity, R.string.general_exception, Toast.LENGTH_LONG)
                     .show();
             Log.e(ARCheckerHelper.class.getName(), boundActivity.getResources().getString(R.string.general_exception), e);
+        }
+    }
+
+    public void onActivityDestroy() {
+        if (session != null) {
+            session.close();
+            session = null;
         }
     }
 }

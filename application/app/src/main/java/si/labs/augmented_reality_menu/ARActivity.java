@@ -3,6 +3,7 @@ package si.labs.augmented_reality_menu;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -12,6 +13,9 @@ import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
 public class ARActivity extends AppCompatActivity {
 
+    // Rendering. The Renderers are created here, and initialized when the GL surface is created.
+    private GLSurfaceView surfaceView;
+
     private ARCheckerHelper arCheckerHelper;
     private CameraHelper cameraHelper;
 
@@ -20,6 +24,7 @@ public class ARActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
 
+        surfaceView = findViewById(R.id.surfaceview);
         arCheckerHelper = new ARCheckerHelper(this);
         cameraHelper = new CameraHelper(this, arCheckerHelper);
     }
@@ -30,6 +35,7 @@ public class ARActivity extends AppCompatActivity {
 
         arCheckerHelper.requestInstall();
         cameraHelper.onActivityResume();
+        surfaceView.onResume();
     }
 
     @Override
@@ -37,6 +43,12 @@ public class ARActivity extends AppCompatActivity {
         super.onPause();
 
         cameraHelper.onActivityPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        arCheckerHelper.onActivityDestroy();
+        super.onDestroy();
     }
 
     @Override

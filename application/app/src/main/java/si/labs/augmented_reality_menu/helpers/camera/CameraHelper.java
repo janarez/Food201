@@ -32,6 +32,7 @@ public class CameraHelper {
     private String sharedCameraId;
     private CameraDeviceStateCallback cameraDeviceStateCallback;
     private CameraSessionStateCallback cameraSessionStateCallback;
+    private CameraCaptureSessionCaptureCallback cameraCaptureSessionCaptureCallback;
     private CameraManager cameraManager;
     private CaptureRequest captureRequest;
 
@@ -48,6 +49,7 @@ public class CameraHelper {
         this.sharedCameraId = arCheckerHelper.getSession().getCameraConfig().getCameraId();
         this.cameraDeviceStateCallback = new CameraDeviceStateCallback(this::createCameraPreviewSession);
         cameraSessionStateCallback = new CameraSessionStateCallback(this::setRepeatingCaptureRequest, this::resumeARCore);
+        cameraCaptureSessionCaptureCallback = new CameraCaptureSessionCaptureCallback();
 
         // Store a reference to the camera system service.
         this.cameraManager = (CameraManager) boundActivity.getSystemService(Context.CAMERA_SERVICE);
@@ -124,7 +126,7 @@ public class CameraHelper {
     private void setRepeatingCaptureRequest() {
         try {
             cameraSessionStateCallback.getCameraCaptureSession()
-                    .setRepeatingRequest(captureRequest, new CameraCaptureSessionCaptureCallback(),backgroundHandler);
+                    .setRepeatingRequest(captureRequest, cameraCaptureSessionCaptureCallback,backgroundHandler);
         } catch (CameraAccessException e) {
             Log.e(CameraHelper.class.getName(), "Exception while trying to access the camera", e);
             Toast.makeText(boundActivity, R.string.camera_can_not_access, Toast.LENGTH_LONG)
@@ -135,6 +137,7 @@ public class CameraHelper {
     private void resumeARCore() {
         try {
             arCheckerHelper.getSession().resume();
+            sharedCamera.setCaptureCallback(cameraCaptureSessionCaptureCallback, backgroundHandler);
         } catch (CameraNotAvailableException e) {
             Log.e(CameraHelper.class.getName(), "Camera not available", e);
             Toast.makeText(boundActivity, R.string.camera_not_available, Toast.LENGTH_LONG)
