@@ -10,7 +10,8 @@ import android.widget.Toast;
 import si.labs.augmented_reality_menu.helpers.ar.ARSessionHelper;
 import si.labs.augmented_reality_menu.helpers.FullScreenHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
-import si.labs.augmented_reality_menu.helpers.opengl.BackgroundRenderer;
+import si.labs.augmented_reality_menu.helpers.opengl.DisplayRotationHelper;
+import si.labs.augmented_reality_menu.helpers.opengl.GeneralRenderer;
 
 public class ARActivity extends AppCompatActivity {
 
@@ -18,6 +19,7 @@ public class ARActivity extends AppCompatActivity {
     private GLSurfaceView surfaceView;
 
     private ARSessionHelper arSessionHelper;
+    private DisplayRotationHelper displayRotationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,10 +27,8 @@ public class ARActivity extends AppCompatActivity {
         setContentView(R.layout.activity_a_r);
 
         surfaceView = findViewById(R.id.surfaceview);
+        displayRotationHelper = new DisplayRotationHelper(this);
         arSessionHelper = new ARSessionHelper(this);
-
-        BackgroundRenderer renderer = new BackgroundRenderer();
-        renderer.configureSurfaceView(surfaceView);
     }
 
     @Override
@@ -37,7 +37,9 @@ public class ARActivity extends AppCompatActivity {
 
         requestCameraPermission();
         arSessionHelper.onActivityResume();
+        new GeneralRenderer(surfaceView, arSessionHelper.getSession(), getAssets(), displayRotationHelper);
         surfaceView.onResume();
+        displayRotationHelper.onResume();
     }
 
     @Override
@@ -50,7 +52,11 @@ public class ARActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        surfaceView.onPause();
+        if (arSessionHelper.getSession() != null) {
+            displayRotationHelper.onPause();
+            surfaceView.onPause();
+            arSessionHelper.onActivityPause();
+        }
     }
 
     @Override

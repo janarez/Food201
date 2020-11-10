@@ -7,6 +7,7 @@ import android.widget.Toast;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Session;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
@@ -18,6 +19,8 @@ import java.util.EnumSet;
 import si.labs.augmented_reality_menu.R;
 
 public class ARSessionHelper {
+    private static final String TAG = ARSessionHelper.class.getSimpleName();
+
     private final Activity boundActivity;
     private Session session;
     private boolean mUserRequestedInstall = true;
@@ -31,44 +34,48 @@ public class ARSessionHelper {
     }
 
     public void onActivityResume() {
-        if (session != null) {
-            return;
+        if (session == null) {
+            try {
+                switch (ArCoreApk.getInstance().requestInstall(boundActivity, mUserRequestedInstall)) {
+                    case INSTALLED:
+                        session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
+                        break;
+                    case INSTALL_REQUESTED:
+                        mUserRequestedInstall = false;
+                        break;
+                }
+            } catch (UnavailableUserDeclinedInstallationException e) {
+                Toast.makeText(boundActivity, R.string.ar_user_declined_install, Toast.LENGTH_LONG)
+                        .show();
+                Log.d(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_user_declined_install), e);
+            } catch (UnavailableArcoreNotInstalledException e) {
+                Toast.makeText(boundActivity, R.string.ar_not_installed, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_not_installed), e);
+            } catch (UnavailableApkTooOldException e) {
+                Toast.makeText(boundActivity, R.string.ar_apk_too_old, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_apk_too_old), e);
+            } catch (UnavailableSdkTooOldException e) {
+                Toast.makeText(boundActivity, R.string.ar_sdk_too_old, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_sdk_too_old), e);
+            } catch (UnavailableDeviceNotCompatibleException e) {
+                Toast.makeText(boundActivity, R.string.ar_device_incompatible, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_device_incompatible), e);
+            } catch (Exception e) {
+                Toast.makeText(boundActivity, R.string.general_exception, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.general_exception), e);
+            }
         }
 
         try {
-            switch (ArCoreApk.getInstance().requestInstall(boundActivity, mUserRequestedInstall)) {
-                case INSTALLED:
-                    session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
-                    configureSession(session);
-                    break;
-                case INSTALL_REQUESTED:
-                    mUserRequestedInstall = false;
-                    break;
-            }
-        } catch (UnavailableUserDeclinedInstallationException e) {
-            Toast.makeText(boundActivity, R.string.ar_user_declined_install, Toast.LENGTH_LONG)
-                    .show();
-            Log.d(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_user_declined_install), e);
-        } catch (UnavailableArcoreNotInstalledException e) {
-            Toast.makeText(boundActivity, R.string.ar_not_installed, Toast.LENGTH_LONG)
-                    .show();
-            Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_not_installed), e);
-        } catch (UnavailableApkTooOldException e) {
-            Toast.makeText(boundActivity, R.string.ar_apk_too_old, Toast.LENGTH_LONG)
-                    .show();
-            Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_apk_too_old), e);
-        } catch (UnavailableSdkTooOldException e) {
-            Toast.makeText(boundActivity, R.string.ar_sdk_too_old, Toast.LENGTH_LONG)
-                    .show();
-            Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_sdk_too_old), e);
-        } catch (UnavailableDeviceNotCompatibleException e) {
-            Toast.makeText(boundActivity, R.string.ar_device_incompatible, Toast.LENGTH_LONG)
-                    .show();
-            Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.ar_device_incompatible), e);
-        } catch (Exception e) {
-            Toast.makeText(boundActivity, R.string.general_exception, Toast.LENGTH_LONG)
-                    .show();
-            Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.general_exception), e);
+            configureSession(session);
+            session.resume();
+        } catch (CameraNotAvailableException e) {
+            session = null;
         }
     }
 
@@ -84,5 +91,9 @@ public class ARSessionHelper {
             session.close();
             session = null;
         }
+    }
+
+    public void onActivityPause() {
+        session.pause();
     }
 }
