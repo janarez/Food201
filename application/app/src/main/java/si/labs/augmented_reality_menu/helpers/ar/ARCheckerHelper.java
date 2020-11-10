@@ -1,7 +1,6 @@
-package si.labs.augmented_reality_menu.helpers;
+package si.labs.augmented_reality_menu.helpers.ar;
 
 import android.app.Activity;
-import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 

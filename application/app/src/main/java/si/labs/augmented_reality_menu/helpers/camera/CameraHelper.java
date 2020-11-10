@@ -19,7 +19,7 @@ import com.google.ar.core.exceptions.CameraNotAvailableException;
 import java.util.List;
 
 import si.labs.augmented_reality_menu.R;
-import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.ar.ARCheckerHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
 public class CameraHelper {

@@ -7,10 +7,11 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import si.labs.augmented_reality_menu.helpers.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.ar.ARCheckerHelper;
 import si.labs.augmented_reality_menu.helpers.FullScreenHelper;
 import si.labs.augmented_reality_menu.helpers.camera.CameraHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
+import si.labs.augmented_reality_menu.helpers.opengl.BackgroundRenderer;
 
 public class ARActivity extends AppCompatActivity {
 
@@ -28,6 +29,9 @@ public class ARActivity extends AppCompatActivity {
         surfaceView = findViewById(R.id.surfaceview);
         arCheckerHelper = new ARCheckerHelper(this);
         cameraHelper = new CameraHelper(this, arCheckerHelper);
+
+        BackgroundRenderer renderer = new BackgroundRenderer();
+        renderer.configureSurfaceView(surfaceView);
     }
 
     @Override
