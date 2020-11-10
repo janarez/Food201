@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import si.labs.augmented_reality_menu.helpers.ar.ARCheckerHelper;
 import si.labs.augmented_reality_menu.helpers.FullScreenHelper;
-import si.labs.augmented_reality_menu.helpers.camera.CameraHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 import si.labs.augmented_reality_menu.helpers.opengl.BackgroundRenderer;
 
@@ -19,7 +18,6 @@ public class ARActivity extends AppCompatActivity {
     private GLSurfaceView surfaceView;
 
     private ARCheckerHelper arCheckerHelper;
-    private CameraHelper cameraHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +26,6 @@ public class ARActivity extends AppCompatActivity {
 
         surfaceView = findViewById(R.id.surfaceview);
         arCheckerHelper = new ARCheckerHelper(this);
-        cameraHelper = new CameraHelper(this, arCheckerHelper);
 
         BackgroundRenderer renderer = new BackgroundRenderer();
         renderer.configureSurfaceView(surfaceView);
@@ -38,8 +35,7 @@ public class ARActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        arCheckerHelper.requestInstall();
-        cameraHelper.onActivityResume();
+        arCheckerHelper.onActivityResume();
         surfaceView.onResume();
     }
 
@@ -53,7 +49,7 @@ public class ARActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        cameraHelper.onActivityPause();
+        surfaceView.onPause();
     }
 
     @Override

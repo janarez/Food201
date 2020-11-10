@@ -30,7 +30,7 @@ public class ARCheckerHelper {
         return session;
     }
 
-    public void requestInstall() {
+    public void onActivityResume() {
         if (session != null) {
             return;
         }
