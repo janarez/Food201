@@ -7,7 +7,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import si.labs.augmented_reality_menu.helpers.ar.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.ar.ARSessionHelper;
 import si.labs.augmented_reality_menu.helpers.FullScreenHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 import si.labs.augmented_reality_menu.helpers.opengl.BackgroundRenderer;
@@ -17,7 +17,7 @@ public class ARActivity extends AppCompatActivity {
     // Rendering. The Renderers are created here, and initialized when the GL surface is created.
     private GLSurfaceView surfaceView;
 
-    private ARCheckerHelper arCheckerHelper;
+    private ARSessionHelper arSessionHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,7 +25,7 @@ public class ARActivity extends AppCompatActivity {
         setContentView(R.layout.activity_a_r);
 
         surfaceView = findViewById(R.id.surfaceview);
-        arCheckerHelper = new ARCheckerHelper(this);
+        arSessionHelper = new ARSessionHelper(this);
 
         BackgroundRenderer renderer = new BackgroundRenderer();
         renderer.configureSurfaceView(surfaceView);
@@ -35,7 +35,8 @@ public class ARActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        arCheckerHelper.onActivityResume();
+        requestCameraPermission();
+        arSessionHelper.onActivityResume();
         surfaceView.onResume();
     }
 
@@ -54,8 +55,14 @@ public class ARActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        arCheckerHelper.onActivityDestroy();
+        arSessionHelper.onActivityDestroy();
         super.onDestroy();
+    }
+
+    private void requestCameraPermission() {
+        if (!CameraPermissionHelper.hasCameraPermission(this)) {
+            CameraPermissionHelper.requestCameraPermission(this);
+        }
     }
 
     @Override

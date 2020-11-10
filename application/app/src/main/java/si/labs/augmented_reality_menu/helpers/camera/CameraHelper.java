@@ -19,14 +19,14 @@ import com.google.ar.core.exceptions.CameraNotAvailableException;
 import java.util.List;
 
 import si.labs.augmented_reality_menu.R;
-import si.labs.augmented_reality_menu.helpers.ar.ARCheckerHelper;
+import si.labs.augmented_reality_menu.helpers.ar.ARSessionHelper;
 import si.labs.augmented_reality_menu.helpers.CameraPermissionHelper;
 
 public class CameraHelper {
     private static final String cameraBackgroundThreadName = "sharedCameraBackground";
 
     private final Activity boundActivity;
-    private final ARCheckerHelper arCheckerHelper;
+    private final ARSessionHelper arSessionHelper;
 
     private SharedCamera sharedCamera;
     private String sharedCameraId;
@@ -39,14 +39,14 @@ public class CameraHelper {
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
 
-    public CameraHelper(Activity activity, ARCheckerHelper arCheckerHelper) {
+    public CameraHelper(Activity activity, ARSessionHelper arSessionHelper) {
         this.boundActivity = activity;
-        this.arCheckerHelper = arCheckerHelper;
+        this.arSessionHelper = arSessionHelper;
     }
 
     public void onActivityResume() {
-        this.sharedCamera = arCheckerHelper.getSession().getSharedCamera();
-        this.sharedCameraId = arCheckerHelper.getSession().getCameraConfig().getCameraId();
+        this.sharedCamera = arSessionHelper.getSession().getSharedCamera();
+        this.sharedCameraId = arSessionHelper.getSession().getCameraConfig().getCameraId();
         this.cameraDeviceStateCallback = new CameraDeviceStateCallback(this::createCameraPreviewSession);
         cameraSessionStateCallback = new CameraSessionStateCallback(this::setRepeatingCaptureRequest, this::resumeARCore);
         cameraCaptureSessionCaptureCallback = new CameraCaptureSessionCaptureCallback();
@@ -136,7 +136,7 @@ public class CameraHelper {
 
     private void resumeARCore() {
         try {
-            arCheckerHelper.getSession().resume();
+            arSessionHelper.getSession().resume();
             sharedCamera.setCaptureCallback(cameraCaptureSessionCaptureCallback, backgroundHandler);
         } catch (CameraNotAvailableException e) {
             Log.e(CameraHelper.class.getName(), "Camera not available", e);
