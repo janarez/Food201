@@ -39,8 +39,7 @@ public class ARSessionHelper {
             switch (ArCoreApk.getInstance().requestInstall(boundActivity, mUserRequestedInstall)) {
                 case INSTALLED:
                     session = new Session(boundActivity, EnumSet.of(Session.Feature.SHARED_CAMERA));
-                    Config config = session.getConfig();
-                    config.setInstantPlacementMode(Config.InstantPlacementMode.LOCAL_Y_UP);
+                    configureSession(session);
                     break;
                 case INSTALL_REQUESTED:
                     mUserRequestedInstall = false;
@@ -71,6 +70,13 @@ public class ARSessionHelper {
                     .show();
             Log.e(ARSessionHelper.class.getName(), boundActivity.getResources().getString(R.string.general_exception), e);
         }
+    }
+
+    private void configureSession(Session session) {
+        Config config = session.getConfig();
+        config.setDepthMode(Config.DepthMode.DISABLED);
+        config.setInstantPlacementMode(Config.InstantPlacementMode.LOCAL_Y_UP);
+        session.configure(config);
     }
 
     public void onActivityDestroy() {
