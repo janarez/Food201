@@ -21,15 +21,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Augmented_reality_menu">
-        <activity android:name=".ARActivitySceneform">
+        <activity android:name=".ARActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ARActivity"/>
-        <activity android:name=".MainActivity" />
         <!--
  "AR Required" app, requires "Google Play Services for AR" (ARCore)
        to be installed, as the app does not include any non-AR features.
