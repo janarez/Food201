@@ -9,13 +9,17 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
+
+import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
 
 public class ARActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final String TAG = ARActivity.class.getSimpleName();
 
     private ArFragment arFragment;
+    private ViewRenderable menuRenderable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,8 +28,15 @@ public class ARActivity extends AppCompatActivity {
         if (!checkIsSupportedDeviceOrFinish(this)) {
             return;
         }
-        setContentView(R.layout.activity_a_r_sceneform);
+        setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, menuRenderable));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        arFragment.onDestroy();
     }
 
     /**
