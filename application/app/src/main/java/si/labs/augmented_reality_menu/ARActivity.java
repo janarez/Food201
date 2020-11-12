@@ -12,6 +12,9 @@ import android.widget.Toast;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
 import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
 
 public class ARActivity extends AppCompatActivity {
@@ -30,7 +33,21 @@ public class ARActivity extends AppCompatActivity {
         }
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, menuRenderable));
+        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this));
+
+        CompletableFuture<ViewRenderable> menuRenderableFuture =
+                ViewRenderable.builder().setView(this, R.layout.menu_layout_a_r).build();
+
+        menuRenderableFuture.handle((viewRenderable, throwable) -> {
+            if (throwable != null) {
+                Toast.makeText(this, R.string.error_creating_menu_view, Toast.LENGTH_LONG)
+                        .show();
+                Log.e(TAG, getResources().getString(R.string.error_creating_menu_view), throwable);
+            }
+
+            menuRenderable = viewRenderable;
+            return null;
+        });
     }
 
     @Override
@@ -60,5 +77,9 @@ public class ARActivity extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    public Optional<ViewRenderable> getMenuRenderable() {
+        return Optional.ofNullable(menuRenderable);
     }
 }

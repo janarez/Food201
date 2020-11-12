@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Augmented reality menu</string>
+    <string name="error_creating_menu_view">Error creating menu view.</string>
 </resources>
