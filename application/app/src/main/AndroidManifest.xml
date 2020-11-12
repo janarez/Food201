@@ -7,8 +7,12 @@
  Limits app visibility in the Google Play Store to ARCore supported devices
          (https://developers.google.com/ar/discover/supported-devices).
     -->
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
-    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera.ar"
+        android:required="true" />
+    <uses-feature
+        android:glEsVersion="0x00030000"
+        android:required="true" />
 
     <application
         android:allowBackup="false"
@@ -17,15 +21,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Augmented_reality_menu">
-        <activity android:name=".ARActivity">
+        <activity android:name=".ARActivitySceneform">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity">
-        </activity>
+        <activity android:name=".ARActivity"/>
+        <activity android:name=".MainActivity" />
         <!--
  "AR Required" app, requires "Google Play Services for AR" (ARCore)
        to be installed, as the app does not include any non-AR features.

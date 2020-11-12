@@ -37,9 +37,15 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    implementation 'com.google.ar:core:1.20.0'
+    implementation 'com.google.ar:core:1.21.0'
+    // Provides ArFragment, and other UX resources.
+    implementation 'com.google.ar.sceneform.ux:sceneform-ux:1.17.1'
+
+    // Alternatively, use ArSceneView without the UX dependency.
+    implementation 'com.google.ar.sceneform:core:1.17.1'
+
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
-    implementation 'de.javagl:obj:0.2.1'
+    implementation 'de.javagl:obj:0.3.0'
 }
