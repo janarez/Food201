@@ -1,6 +1,5 @@
 package si.labs.augmented_reality_menu.menu_display;
 
-import android.util.Log;
 import android.view.MotionEvent;
 
 import com.google.ar.core.Anchor;
@@ -9,7 +8,6 @@ import com.google.ar.core.Plane;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.ViewRenderable;
-import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.BaseArFragment;
 
 import java.util.Optional;
@@ -21,6 +19,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
     private final BaseArFragment arFragment;
     private final ARActivity arActivity;
+    private Node menuNode;
 
     public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity) {
         this.arFragment = arFragment;
@@ -34,12 +33,15 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
             return;
         }
 
+        if (menuNode == null) {
+            menuNode = new Node();
+            menuNode.setRenderable(menu.get());
+        }
+
         Anchor anchor = hitResult.createAnchor();
         AnchorNode anchorNode = new AnchorNode(anchor);
         anchorNode.setParent(arFragment.getArSceneView().getScene());
 
-        Node menuNode = new Node();
         menuNode.setParent(anchorNode);
-        menuNode.setRenderable(menu.get());
     }
 }
