@@ -6,9 +6,11 @@ import com.google.ar.core.Anchor;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.sceneform.AnchorNode;
-import com.google.ar.sceneform.Node;
+import com.google.ar.sceneform.math.Quaternion;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.BaseArFragment;
+import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.Optional;
 
@@ -19,7 +21,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
     private final BaseArFragment arFragment;
     private final ARActivity arActivity;
-    private Node menuNode;
+    private TransformableNode menuNode;
 
     public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity) {
         this.arFragment = arFragment;
@@ -34,8 +36,13 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
         }
 
         if (menuNode == null) {
-            menuNode = new Node();
+            menuNode = new TransformableNode(arFragment.getTransformationSystem());
             menuNode.setRenderable(menu.get());
+
+            Quaternion menuRotationY = Quaternion.axisAngle(new Vector3(0, 1, 0), 180f);
+            Quaternion menuRotationX = Quaternion.axisAngle(new Vector3(1, 0, 0), -90);
+
+            menuNode.setLocalRotation(Quaternion.multiply(menuRotationX, menuRotationY));
         }
 
         Anchor anchor = hitResult.createAnchor();
