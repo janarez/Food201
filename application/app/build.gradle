@@ -31,6 +31,11 @@ android {
         // Don't compress tf-lite model.
         noCompress "tflite"
     }
+
+    // TODO: Hack. Resolve clashing dependecies (won't build atm).
+    configurations.all {
+        exclude group: 'com.google.flatbuffers', module: 'flatbuffers-java'
+    }
 }
 
 dependencies {
