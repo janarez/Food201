@@ -55,4 +55,6 @@ dependencies {
 
     // Tensorflow Lite.
     implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    // Image to tensor manipulation.
+    implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
 }
