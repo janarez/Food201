@@ -3,16 +3,12 @@ package si.labs.augmented_reality_menu;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.graphics.ImageFormat;
-import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.ar.core.Frame;
-import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 
@@ -37,9 +33,13 @@ public class ARActivity extends AppCompatActivity {
         if (!checkIsSupportedDeviceOrFinish(this)) {
             return;
         }
+
+        // Loads and then runs model on AR camera images.
+        modelExecutor = new ModelExecutor(getApplicationContext());
+
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this));
+        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
 
         CompletableFuture<ViewRenderable> menuRenderableFuture =
                 ViewRenderable.builder().setView(this, R.layout.menu_layout_a_r).build();
@@ -54,39 +54,14 @@ public class ARActivity extends AppCompatActivity {
             menuRenderable = viewRenderable;
             return null;
         });
-
-        // Loads and then runs model on AR camera images.
-        modelExecutor = new ModelExecutor(getApplicationContext());
-
-        // Get camera scene for the model.
-        Frame arFrame = arFragment.getArSceneView().getArFrame();
-        if (arFrame != null) {
-            // Copy the camera stream to a bitmap
-            try (Image sceneImage = arFrame.acquireCameraImage()) {
-                Log.d(TAG, String.format("Acquired scene image [%d, %d] in format %s",
-                        sceneImage.getHeight(), sceneImage.getWidth(), sceneImage.getFormat()));
-
-                // The scene image should and must be in given format as per documentation.
-                if (sceneImage.getFormat() != ImageFormat.YUV_420_888) {
-                    throw new UnsupportedOperationException(
-                            String.format("Cannot process scene image in format %s", sceneImage.getFormat()));
-                }
-
-                // Pass to model.
-                modelExecutor.run(sceneImage);
-
-            } catch (NotYetAvailableException e) {
-                Log.e(TAG, "Could not get scene image.");
-            } catch (UnsupportedOperationException e) {
-                Log.e(TAG, e.getMessage());
-            }
-        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        arFragment.onDestroy();
+        if (arFragment != null) {
+            arFragment.onDestroy();
+        }
     }
 
     /**
