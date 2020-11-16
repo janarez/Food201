@@ -49,6 +49,10 @@ public class ModelExecutor {
         Log.d(TAG, "Created `ModelExecutor` instance.");
     }
 
+    /**
+     * Runs segmentation model and returns `ModelOutput` with overlayed mask on original image
+     * as well as found labels.
+     */
     public ModelOutput run(Image image) {
         long totalTime = System.currentTimeMillis();
 

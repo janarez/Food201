@@ -4,6 +4,9 @@ import android.graphics.Bitmap;
 
 import java.util.HashSet;
 
+/**
+ * Encapsulates model output: overlayed mask + labels.
+ */
 public class ModelOutput {
     public final Bitmap mask;
     public final HashSet<Integer> labels;
