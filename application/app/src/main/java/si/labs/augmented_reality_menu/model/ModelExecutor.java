@@ -27,19 +27,13 @@ public class ModelExecutor {
     private Interpreter interpreter;
 
     // Model constants.
-    private static final String MODEL_NAME = "apple_barbecue.tflite";
+    private static final String MODEL_NAME = "hamburger_hummus_01.tflite";
     private static final int IMAGE_HEIGHT = 64;
     private static final int IMAGE_WIDTH = 64;
     private static final int CLASSES = 209;
 
     // Stores random color for each label.
     private int[] labelColors = new int[CLASSES];
-
-    // Testing variables for model timing.
-    private long totalTime = 0;
-    private long preprocessTime = 0;
-    private long segmentationTime = 0;
-    private long maskTime = 0;
 
     private static final String TAG = ModelExecutor.class.getSimpleName();
 
@@ -55,11 +49,11 @@ public class ModelExecutor {
         Log.d(TAG, "Created `ModelExecutor` instance.");
     }
 
-    public Bitmap run(Image image) {
-        totalTime = System.currentTimeMillis();
+    public ModelOutput run(Image image) {
+        long totalTime = System.currentTimeMillis();
 
         // Image preprocessing.
-        preprocessTime = System.currentTimeMillis();
+        long preprocessTime = System.currentTimeMillis();
         // Save original dimensions for resizing mask.
         int originalHeight = image.getHeight();
         int originalWidth = image.getWidth();
@@ -69,7 +63,7 @@ public class ModelExecutor {
         Log.d(TAG, String.format("Image preprocessing took %d ms", preprocessTime));
 
         // Segmentation.
-        segmentationTime = System.currentTimeMillis();
+        long segmentationTime = System.currentTimeMillis();
         // Preallocate space for output mask.
         ByteBuffer outputBuffer = ByteBuffer.allocateDirect(IMAGE_HEIGHT * IMAGE_WIDTH * CLASSES * 4); // Int32.
         outputBuffer.order(ByteOrder.nativeOrder()); // To spare extraneous copying.
@@ -78,35 +72,57 @@ public class ModelExecutor {
         Log.d(TAG, String.format("Segmentation took %d ms", segmentationTime));
 
         // Mask processing.
-        maskTime = System.currentTimeMillis();
-        Bitmap maskOverlay = postprocessMask(outputBuffer, inputBitmap, originalHeight, originalWidth);
+        long maskTime = System.currentTimeMillis();
+        ModelOutput modelOutput = postprocessMask(outputBuffer, inputBitmap, originalHeight, originalWidth);
         maskTime = System.currentTimeMillis() - maskTime;
         Log.d(TAG, String.format("Mask postprocessing took %d ms", maskTime));
         totalTime = System.currentTimeMillis() - totalTime;
         Log.d(TAG, String.format("Full model run took %d ms", totalTime));
 
-        return maskOverlay;
+        return modelOutput;
     }
 
     /**
      * Transforms model's output `ByteBuffer` to `Bitmap` of specified size.
      * The predicted mask is overlayed on `inputBitmap`.
      */
-    private Bitmap postprocessMask(ByteBuffer outputBuffer, Bitmap inputBitmap, int height, int width) {
+    private ModelOutput postprocessMask(ByteBuffer outputBuffer, Bitmap inputBitmap, int height, int width) {
         Bitmap mask = Bitmap.createBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, Bitmap.Config.ARGB_8888);
         Bitmap maskOverlay = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
         // TODO: Return labels as well for AR.
         HashSet<Integer> labels = new HashSet<>();
 
+        // Track winning class at given pixel.
+        int maxLabel = 0;
+        float maxProb = 0;
+
         // Iterate over buffer to extract label at each pixel.
         for (int y = 0; y < IMAGE_HEIGHT; y++) {
             for (int x = 0; x < IMAGE_WIDTH; x++) {
-                int label = outputBuffer.getInt((y * IMAGE_WIDTH + x) * 4);
-                labels.add(label);
-                mask.setPixel(x, y, labelColors[label]);
+                for (int c = 0; c < CLASSES; c++) {
+                    float prob = outputBuffer.getFloat(
+                            (y * IMAGE_WIDTH * CLASSES + x * CLASSES + c) * 4);
+                    if (prob > maxProb) {
+                        maxProb = prob;
+                        maxLabel = c;
+                    }
+                    // Break early if possible.
+                    if (maxProb > 0.5) {
+                        break;
+                    }
+                }
+                if (labels.add(maxLabel)) {
+                    Log.d(TAG, String.format("Found another label: %d.", maxLabel));
+                }
+                mask.setPixel(x, y, labelColors[maxLabel]);
+
+                // Reset.
+                maxLabel = 0;
+                maxProb = 0;
             }
         }
+        Log.d(TAG, String.format("Found %d labels in mask.", labels.size()));
         // Resize to original image size.
         Bitmap enlargedMask = Bitmap.createScaledBitmap(mask, width, height, true);
 
@@ -114,7 +130,7 @@ public class ModelExecutor {
         Canvas canvas = new Canvas(maskOverlay);
         canvas.drawBitmap(inputBitmap, new Matrix(), null);
         canvas.drawBitmap(enlargedMask, new Matrix(), null);
-        return maskOverlay;
+        return new ModelOutput(maskOverlay, labels);
     }
 
     /**

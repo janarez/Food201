@@ -13,6 +13,7 @@ import com.google.ar.sceneform.ux.BaseArFragment;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
+import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListener {
     private static final String TAG = DisplayOnPlaneTapImpl.class.getSimpleName();
@@ -44,7 +45,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
                 }
 
                 // Pass to model.
-                modelExecutor.run(sceneImage);
+                ModelOutput modelOutput = modelExecutor.run(sceneImage);
             } catch (NotYetAvailableException e) {
                 Log.e(TAG, "Could not get scene image.");
             } catch (UnsupportedOperationException e) {
