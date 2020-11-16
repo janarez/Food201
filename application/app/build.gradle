@@ -26,6 +26,16 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    aaptOptions {
+        // Don't compress tf-lite model.
+        noCompress "tflite"
+    }
+
+    // TODO: Hack. Resolve clashing dependecies (won't build atm).
+    configurations.all {
+        exclude group: 'com.google.flatbuffers', module: 'flatbuffers-java'
+    }
 }
 
 dependencies {
@@ -44,8 +54,12 @@ dependencies {
     // Alternatively, use ArSceneView without the UX dependency.
     implementation 'com.google.ar.sceneform:core:1.17.1'
 
-
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
     implementation 'de.javagl:obj:0.3.0'
+
+    // Tensorflow Lite.
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    // Image to tensor manipulation.
+    implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
 }

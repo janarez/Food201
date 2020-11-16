@@ -1,13 +1,13 @@
 package si.labs.augmented_reality_menu;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
+import si.labs.augmented_reality_menu.model.ModelExecutor;
 
 public class ARActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
@@ -23,6 +24,7 @@ public class ARActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
     private ViewRenderable menuRenderable;
+    private ModelExecutor modelExecutor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,9 +33,13 @@ public class ARActivity extends AppCompatActivity {
         if (!checkIsSupportedDeviceOrFinish(this)) {
             return;
         }
+
+        // Loads and then runs model on AR camera images.
+        modelExecutor = new ModelExecutor(getApplicationContext());
+
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this));
+        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
 
         CompletableFuture<ViewRenderable> menuRenderableFuture =
                 ViewRenderable.builder().setView(this, R.layout.menu_layout_a_r).build();
@@ -53,7 +59,9 @@ public class ARActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        arFragment.onDestroy();
+        if (arFragment != null) {
+            arFragment.onDestroy();
+        }
     }
 
     /**
