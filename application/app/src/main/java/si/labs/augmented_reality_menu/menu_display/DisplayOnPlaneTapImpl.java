@@ -38,6 +38,8 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
     @Override
     public void onTapPlane(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
+        ModelOutput modelOutput = null;
+
         // Get camera scene for the model.
         Frame frame = arFragment.getArSceneView().getArFrame();
         if (frame != null) {
@@ -53,7 +55,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
                 }
 
                 // Pass to model.
-                ModelOutput modelOutput = modelExecutor.run(sceneImage);
+                modelOutput = modelExecutor.run(sceneImage);
             } catch (NotYetAvailableException e) {
                 Log.e(TAG, "Could not get scene image.");
             } catch (UnsupportedOperationException e) {
@@ -77,6 +79,6 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
         // Display the obtained labels.
         TextView textBox = menu.get().getView().findViewById(R.id.labelText);
-        textBox.setText("test");
+        textBox.setText(modelOutput != null ? modelOutput.labelsAsSingleString() : "Segmentation failed.");
     }
 }

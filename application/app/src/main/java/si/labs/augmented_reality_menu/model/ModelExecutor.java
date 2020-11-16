@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class ModelExecutor {
     private Context context;
@@ -27,19 +29,23 @@ public class ModelExecutor {
     private Interpreter interpreter;
 
     // Model constants.
-    private static final String MODEL_NAME = "hamburger_hummus_01.tflite";
+    private static final String MODEL_FILE = "hamburger_hummus_01.tflite";
+    private static final String LABEL_FILE = "labels.txt";
+
     private static final int IMAGE_HEIGHT = 64;
     private static final int IMAGE_WIDTH = 64;
     private static final int CLASSES = 209;
 
     // Stores random color for each label.
     private int[] labelColors = new int[CLASSES];
+    private List<String> labels;
 
     private static final String TAG = ModelExecutor.class.getSimpleName();
 
     public ModelExecutor(Context context) {
         this.context = context;
         interpreter = getInterpreter(context);
+        labels = getLabels(context);
 
         // Initialize label colors.
         labelColors[0] = 0; // Transparent.
@@ -94,8 +100,7 @@ public class ModelExecutor {
         Bitmap mask = Bitmap.createBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, Bitmap.Config.ARGB_8888);
         Bitmap maskOverlay = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
-        // TODO: Return labels as well for AR.
-        HashSet<Integer> labels = new HashSet<>();
+        HashSet<Integer> idLabels = new HashSet<>();
 
         // Track winning class at given pixel.
         int maxLabel = 0;
@@ -116,7 +121,7 @@ public class ModelExecutor {
                         break;
                     }
                 }
-                if (labels.add(maxLabel)) {
+                if (idLabels.add(maxLabel)) {
                     Log.d(TAG, String.format("Found another label: %d.", maxLabel));
                 }
                 mask.setPixel(x, y, labelColors[maxLabel]);
@@ -126,7 +131,9 @@ public class ModelExecutor {
                 maxProb = 0;
             }
         }
-        Log.d(TAG, String.format("Found %d labels in mask.", labels.size()));
+        // Convert class ID's to text labels.
+        List<String> labels = convertLabels(idLabels);
+        
         // Resize to original image size.
         Bitmap enlargedMask = Bitmap.createScaledBitmap(mask, width, height, true);
 
@@ -135,6 +142,18 @@ public class ModelExecutor {
         canvas.drawBitmap(inputBitmap, new Matrix(), null);
         canvas.drawBitmap(enlargedMask, new Matrix(), null);
         return new ModelOutput(maskOverlay, labels);
+    }
+
+    /**
+     * Converts id's to string labels.
+     */
+    private List<String> convertLabels(HashSet<Integer> ids) {
+        List<String> strings = new ArrayList<>(ids.size());
+        for (int id : ids) {
+            strings.add(labels.get(id));
+        }
+        Log.d(TAG, String.format("Found %d labels in mask.", ids.size()));
+        return labels;
     }
 
     /**
@@ -174,9 +193,21 @@ public class ModelExecutor {
      */
     private MappedByteBuffer getModelFile(Context context) {
         try {
-            return FileUtil.loadMappedFile(context, MODEL_NAME);
+            return FileUtil.loadMappedFile(context, MODEL_FILE);
         } catch (IOException e) {
-            Log.e(TAG, String.format("Couldn't find %s among assets.", MODEL_NAME));
+            Log.e(TAG, String.format("Couldn't find %s among assets.", MODEL_FILE));
+        }
+        return null;
+    }
+
+    /**
+     * Loads labels from assets.
+     */
+    private List<String> getLabels(Context context) {
+        try {
+            return FileUtil.loadLabels(context, LABEL_FILE);
+        } catch (IOException e) {
+            Log.e(TAG, String.format("Couldn't find %s among assets.", LABEL_FILE));
         }
         return null;
     }
