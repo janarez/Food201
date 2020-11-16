@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/labelText"
         android:layout_width="144dp"
         android:layout_height="104dp"
         android:text="BIG BOYYY"
