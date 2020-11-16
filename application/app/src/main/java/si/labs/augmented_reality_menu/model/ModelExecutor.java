@@ -153,7 +153,7 @@ public class ModelExecutor {
             strings.add(labels.get(id));
         }
         Log.d(TAG, String.format("Found %d labels in mask.", ids.size()));
-        return labels;
+        return strings;
     }
 
     /**
