@@ -39,7 +39,11 @@ public class ARActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
+        if (arFragment != null) {
+            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
+        } else {
+            throw new RuntimeException("AR fragment is null");
+        }
 
         CompletableFuture<ViewRenderable> menuRenderableFuture =
                 ViewRenderable.builder().setView(this, R.layout.menu_layout_a_r).build();
