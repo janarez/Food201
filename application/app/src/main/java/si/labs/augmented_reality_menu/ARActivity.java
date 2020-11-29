@@ -15,7 +15,7 @@ import com.google.ar.sceneform.ux.ArFragment;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
+import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 
 public class ARActivity extends AppCompatActivity {
@@ -39,8 +39,12 @@ public class ARActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+
+        BitmapProjector bitmapProjector;
         if (arFragment != null) {
-            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
+            bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
+            arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> bitmapProjector.onFrame());
+//            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
         } else {
             throw new RuntimeException("AR fragment is null");
         }
