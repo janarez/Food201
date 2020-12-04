@@ -3,12 +3,12 @@ package si.labs.augmented_reality_menu.food_sensing;
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.media.Image;
+import android.util.DisplayMetrics;
 import android.util.Log;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
-import com.google.ar.core.Plane;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Scene;
@@ -23,7 +23,6 @@ import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
@@ -37,6 +36,7 @@ public class BitmapProjector {
     private final ARActivity arActivity;
     private final ModelExecutor modelExecutor;
 
+    private DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
     private long nextProjectionTime; // in millis
 
@@ -46,7 +46,10 @@ public class BitmapProjector {
         this.modelExecutor = modelExecutor;
 
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
-        deltaTime = 15000;
+        deltaTime = 5000;
+
+        displayMetrics = new DisplayMetrics();
+        arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     }
 
     private void drawPoint(Scene scene, HitResult hitResult, int maskValue) {
@@ -99,23 +102,22 @@ public class BitmapProjector {
             return;
         }
 
-        Random random = new Random();
         Scene scene = arFragment.getArSceneView().getScene();
         List<String> labels = modelOutput.getLabels();
         Bitmap mask = modelOutput.getMask();
 
-        for (int i = 0; i < mask.getWidth(); i++) {
-            for (int j = 0; j < mask.getHeight(); j++) {
-                if (random.nextFloat() < 0.0001) {
-                    List<HitResult> hits = frame.hitTest(i, j);
-                    Optional<HitResult> result = hits.stream()
-                            .filter(hitResult -> hitResult.getTrackable() instanceof Plane)
-                            .filter(hitResult -> hitResult.getDistance() < maxDepth)
-                            .filter(hitResult -> hitResult.getDistance() > minDepth)
-                            .min(Comparator.comparingDouble(HitResult::getDistance));
-                    int pixelValue = mask.getPixel(i, j);
-                    result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
-                }
+        float xRatio = displayMetrics.widthPixels * 1.0f / mask.getWidth();
+        float yRatio = displayMetrics.heightPixels * 1.0f / mask.getHeight();
+
+        for (int i = 0; i < mask.getWidth(); i += 100) {
+            for (int j = 0; j < mask.getHeight(); j += 100) {
+                List<HitResult> hits = frame.hitTest(Math.round(i * xRatio), j * yRatio);
+                Optional<HitResult> result = hits.stream()
+                        .filter(hitResult -> hitResult.getDistance() < maxDepth)
+                        .filter(hitResult -> hitResult.getDistance() > minDepth)
+                        .min(Comparator.comparingDouble(HitResult::getDistance));
+                int pixelValue = mask.getPixel(i, j);
+                result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
             }
         }
     }
