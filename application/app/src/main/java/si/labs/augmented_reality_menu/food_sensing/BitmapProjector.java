@@ -5,6 +5,7 @@ import android.graphics.ImageFormat;
 import android.media.Image;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
@@ -108,6 +109,13 @@ public class BitmapProjector {
 
         Scene scene = arFragment.getArSceneView().getScene();
         List<String> labels = modelOutput.getLabels();
+
+        StringBuilder builder = new StringBuilder();
+        for (String label : labels) {
+            builder.append(label).append(" ");
+        }
+        Toast.makeText(arActivity, builder.toString(), Toast.LENGTH_LONG).show();
+
         Bitmap mask = modelOutput.getMask();
 
         float xRatio = displayMetrics.widthPixels * 1.0f / mask.getWidth();
