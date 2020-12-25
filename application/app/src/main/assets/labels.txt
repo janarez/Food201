@@ -23,7 +23,6 @@ black beans
 blackberries
 blueberries
 bread
-NOTHING
 bread pudding
 breakfast burrito
 broccoli
@@ -35,7 +34,6 @@ caesar salad
 cake
 cannoli
 caprese salad
-NOTHING
 carrot cake
 carrots
 celery
@@ -60,7 +58,6 @@ cocktail sauce
 coffee
 coleslaw
 corn
-NOTHING
 crab cakes
 crackers
 cream
@@ -69,7 +66,6 @@ croque madame
 croutons
 cucumber slice
 cup cakes
-NOTHING
 deviled eggs
 dipping sauce
 donuts
@@ -123,7 +119,6 @@ lobster bisque
 lobster roll sandwich
 macaroni and cheese
 macarons
-NOTHING
 mashed potatoes
 mint
 miso soup
@@ -133,7 +128,6 @@ mixed vegetables
 mushrooms
 mussels
 mustard
-NOTHING
 nachos
 noodles
 nuts
@@ -142,7 +136,6 @@ omelette
 onion rings
 onions
 orange slice
-NOTHING
 oysters
 pad thai
 paella

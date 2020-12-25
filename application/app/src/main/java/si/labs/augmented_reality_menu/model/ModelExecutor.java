@@ -29,12 +29,12 @@ public class ModelExecutor {
     private Interpreter interpreter;
 
     // Model constants.
-    private static final String MODEL_FILE = "hamburger_hummus_01.tflite";
+    private static final String MODEL_FILE = "full_51.tflite";
     private static final String LABEL_FILE = "labels.txt";
 
-    private static final int IMAGE_HEIGHT = 64;
-    private static final int IMAGE_WIDTH = 64;
-    private static final int CLASSES = 209;
+    private static final int IMAGE_HEIGHT = 128;
+    private static final int IMAGE_WIDTH = 128;
+    private static final int CLASSES = 202;
 
     // Stores random color for each label.
     private int[] labelColors = new int[CLASSES];
