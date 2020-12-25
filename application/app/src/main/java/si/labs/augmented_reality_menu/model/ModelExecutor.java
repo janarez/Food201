@@ -68,7 +68,7 @@ public class ModelExecutor {
         int originalHeight = image.getHeight();
         int originalWidth = image.getWidth();
         Bitmap inputBitmap = ImageUtils.fromYuvImageToRgbBitmap(image);
-        ByteBuffer inputBuffer = preprocessImage(inputBitmap);
+        ByteBuffer inputBuffer = preprocessImage(inputBitmap);  // the original image
         preprocessTime = System.currentTimeMillis() - preprocessTime;
         Log.d(TAG, String.format("Image preprocessing took %d ms", preprocessTime));
 
@@ -135,11 +135,11 @@ public class ModelExecutor {
         List<String> labels = convertLabels(idLabels);
         
         // Resize to original image size.
-        Bitmap enlargedMask = Bitmap.createScaledBitmap(mask, width, height, true);
+        Bitmap enlargedMask = Bitmap.createScaledBitmap(mask, width, height, false);
 
         // Overlay input image and predicted mask.
         Canvas canvas = new Canvas(maskOverlay);
-        canvas.drawBitmap(inputBitmap, new Matrix(), null);
+//        canvas.drawBitmap(inputBitmap, new Matrix(), null);
         canvas.drawBitmap(enlargedMask, new Matrix(), null);
         return new ModelOutput(maskOverlay, labels);
     }

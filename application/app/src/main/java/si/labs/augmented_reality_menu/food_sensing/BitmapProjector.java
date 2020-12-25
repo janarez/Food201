@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
@@ -35,6 +36,7 @@ public class BitmapProjector {
     private final ArFragment arFragment;
     private final ARActivity arActivity;
     private final ModelExecutor modelExecutor;
+    private final BitmapProcessing bitmapProcessing;
 
     private DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
@@ -44,6 +46,7 @@ public class BitmapProjector {
         this.arFragment = arFragment;
         this.arActivity = arActivity;
         this.modelExecutor = modelExecutor;
+        this.bitmapProcessing = new BitmapProcessing();
 
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
         deltaTime = 5000;
@@ -53,6 +56,7 @@ public class BitmapProjector {
     }
 
     private void drawPoint(Scene scene, HitResult hitResult, int maskValue) {
+
         Color sphereColor = new Color(); // TODO
         sphereColor.set(maskValue);
         MaterialFactory.makeOpaqueWithColor(arActivity, sphereColor)
@@ -109,15 +113,21 @@ public class BitmapProjector {
         float xRatio = displayMetrics.widthPixels * 1.0f / mask.getWidth();
         float yRatio = displayMetrics.heightPixels * 1.0f / mask.getHeight();
 
-        for (int i = 0; i < mask.getWidth(); i += 100) {
-            for (int j = 0; j < mask.getHeight(); j += 100) {
-                List<HitResult> hits = frame.hitTest(Math.round(i * xRatio), j * yRatio);
-                Optional<HitResult> result = hits.stream()
-                        .filter(hitResult -> hitResult.getDistance() < maxDepth)
-                        .filter(hitResult -> hitResult.getDistance() > minDepth)
-                        .min(Comparator.comparingDouble(HitResult::getDistance));
-                int pixelValue = mask.getPixel(i, j);
-                result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
+        Bitmap edges = bitmapProcessing.getEdges(mask);
+
+        Random random = new Random();
+
+        for (int i = 0; i < mask.getHeight(); i++) {
+            for (int j = 0; j < mask.getWidth(); j++) {
+                if (edges.getPixel(j, i) != 0 && random.nextFloat() < 0.1) {
+                    List<HitResult> hits = frame.hitTest(Math.round(i * xRatio), j * yRatio);
+                    Optional<HitResult> result = hits.stream()
+                            .filter(hitResult -> hitResult.getDistance() < maxDepth)
+                            .filter(hitResult -> hitResult.getDistance() > minDepth)
+                            .min(Comparator.comparingDouble(HitResult::getDistance));
+                    int pixelValue = mask.getPixel(j, i);
+                    result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
+                }
             }
         }
     }
