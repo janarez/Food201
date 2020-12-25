@@ -9,8 +9,8 @@ import java.util.List;
  * Encapsulates model output: overlayed mask + labels.
  */
 public class ModelOutput {
-    public final Bitmap mask;
-    public final List<String> labels;
+    private final Bitmap mask;
+    private final List<String> labels;
 
     public ModelOutput(Bitmap mask, List<String> labels) {
         this.mask = mask;
@@ -19,5 +19,13 @@ public class ModelOutput {
 
     public String labelsAsSingleString() {
         return TextUtils.join(" - ", labels);
+    }
+
+    public Bitmap getMask() {
+        return mask;
+    }
+
+    public List<String> getLabels() {
+        return labels;
     }
 }

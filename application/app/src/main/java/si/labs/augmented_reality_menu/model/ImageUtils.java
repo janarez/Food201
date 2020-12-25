@@ -55,10 +55,10 @@ public class ImageUtils {
      * Returns random AARRGGBB color int with half opacity.
      */
     public static int getRandomColorInt() {
-        int a = 128 << 24;
-        int r = (int)(255 * Math.random()) << 16;
-        int g = (int)(255 * Math.random()) << 8;
-        int b = (int)(255 * Math.random());
+        int a = 255 << 24;
+        int r = (int) (255 * Math.random()) << 16;
+        int g = (int) (255 * Math.random()) << 8;
+        int b = (int) (255 * Math.random());
         return a | r | g | b;
     }
 }
