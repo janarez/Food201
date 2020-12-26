@@ -5,13 +5,16 @@ import android.graphics.ImageFormat;
 import android.media.Image;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
+import com.google.ar.core.Trackable;
+import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
@@ -25,21 +28,25 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 import si.labs.augmented_reality_menu.ARActivity;
+import si.labs.augmented_reality_menu.food_sensing.dto.FrameHitDataDto;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class BitmapProjector {
     private static final String TAG = BitmapProjector.class.getSimpleName();
-    private static final int maxDepth = 1; // 1 meter
-    private static final float minDepth = 0.1f;
+    private static final int MAX_DEPTH = 1; // 1 meter
+    private static final float MIN_DEPTH = 0.1f;
+
     private final ArFragment arFragment;
     private final ARActivity arActivity;
     private final ModelExecutor modelExecutor;
     private final BitmapProcessing bitmapProcessing;
+    private final Random randomGenerator;
 
-    private DisplayMetrics displayMetrics;
+    private final DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
     private long nextProjectionTime; // in millis
 
@@ -49,6 +56,7 @@ public class BitmapProjector {
         this.modelExecutor = modelExecutor;
         this.bitmapProcessing = new BitmapProcessing();
 
+        randomGenerator = new Random();
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
         deltaTime = 5000;
 
@@ -56,37 +64,87 @@ public class BitmapProjector {
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     }
 
-    private void drawPoint(Scene scene, HitResult hitResult, int maskValue) {
+    private void drawPoint(Vector3 relativePosition, int maskValue, AnchorNode anchorNode) {
 
-        Color sphereColor = new Color(); // TODO
+        Color sphereColor = new Color();
         sphereColor.set(maskValue);
         MaterialFactory.makeOpaqueWithColor(arActivity, sphereColor)
                 .thenAccept(material -> {
                     ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
 
-                    Anchor anchor = hitResult.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setRenderable(sphere);
-                    anchorNode.setParent(scene);
+                    Node childNode = new Node();
+                    childNode.setParent(anchorNode);
+                    childNode.setLocalPosition(relativePosition);
+                    childNode.setRenderable(sphere);
                 });
     }
 
     public void onFrame() {
 
+        // if not tracking then wait
+        Frame frame = arFragment.getArSceneView().getArFrame();
+        if (frame == null || frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+            return;
+        }
         long newTime = Calendar.getInstance().getTimeInMillis();
 
+        // don't constantly try to classify
         if (nextProjectionTime > newTime) {
             return;
         } else {
             nextProjectionTime = deltaTime + newTime;
         }
 
-        ModelOutput modelOutput;
-        Frame frame = arFragment.getArSceneView().getArFrame();
-        if (frame == null) {
+        Optional<FrameHitDataDto> frameHitDataDtoOptional = hitRandomPoint(frame);
+        if (!frameHitDataDtoOptional.isPresent()) {
             return;
         }
+        FrameHitDataDto frameHitDataDto = frameHitDataDtoOptional.get();
 
+        Runnable projectPointsRunnable = () -> projectPoints(frame, frameHitDataDto);
+        CompletableFuture.runAsync(projectPointsRunnable).handle((aVoid, throwable) -> {
+            if (throwable != null) {
+                Log.e(TAG, "encountered error");
+                throwable.printStackTrace();
+            }
+            return null;
+        });
+    }
+
+    private Optional<FrameHitDataDto> hitRandomPoint(Frame frame) {
+        int screenWidth = displayMetrics.widthPixels;
+        int screenHeight = displayMetrics.heightPixels;
+
+        int randomX = randomGenerator.nextInt(screenWidth - 1);
+        int randomY = randomGenerator.nextInt(screenHeight - 1);
+
+        List<HitResult> centerHits = frame.hitTest(randomY, randomX);
+
+        Optional<HitResult> optimalHitOpt = getTheOptimalHit(centerHits);
+
+        if (optimalHitOpt.isPresent()) {
+            HitResult optimalHit = optimalHitOpt.get();
+
+            FrameHitDataDto out = new FrameHitDataDto(randomX, randomY, optimalHit);
+
+            return Optional.of(out);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<HitResult> getTheOptimalHit(List<HitResult> hits) {
+        return hits.stream()
+//                .filter(hitResult -> hitResult.getDistance() < maxDepth)
+//                .filter(hitResult -> hitResult.getDistance() > minDepth)
+                .filter(hitResult -> {
+                    Trackable trackable = hitResult.getTrackable();
+                    return trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose());
+                })
+                .min(Comparator.comparingDouble(HitResult::getDistance));
+    }
+
+    private Optional<ModelOutput> getModelOutput(Frame frame) {
         try (Image sceneImage = frame.acquireCameraImage()) {
             Log.d(TAG, String.format("Acquired scene image [%d, %d] in format %d",
                     sceneImage.getHeight(), sceneImage.getWidth(), sceneImage.getFormat()));
@@ -98,45 +156,60 @@ public class BitmapProjector {
             }
 
             // Pass to model.
-            modelOutput = modelExecutor.run(sceneImage);
+            return Optional.of(modelExecutor.run(sceneImage));
         } catch (NotYetAvailableException e) {
             Log.e(TAG, "Could not get scene image.");
-            return;
+            return Optional.empty();
         } catch (UnsupportedOperationException e) {
             Log.e(TAG, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void projectPoints(Frame frame, FrameHitDataDto frameHitDataDto) {
+        Scene scene = arFragment.getArSceneView().getScene();
+
+        Anchor mainAnchor = frameHitDataDto.getCentralPointHit().createAnchor();
+        AnchorNode anchorNode = new AnchorNode(mainAnchor);
+        anchorNode.setParent(scene);
+
+        Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
+        if (!modelOutputOpt.isPresent()) {
             return;
         }
-
-        Scene scene = arFragment.getArSceneView().getScene();
+        ModelOutput modelOutput = modelOutputOpt.get();
         List<String> labels = modelOutput.getLabels();
 
-        StringBuilder builder = new StringBuilder();
-        for (String label : labels) {
-            builder.append(label).append(" ");
-        }
-        Toast.makeText(arActivity, builder.toString(), Toast.LENGTH_LONG).show();
+//        StringBuilder builder = new StringBuilder();
+//        for (String label : labels) {
+//            builder.append(label).append(" ");
+//        }
+//        Toast.makeText(arActivity, builder.toString(), Toast.LENGTH_LONG).show();
 
         Bitmap mask = modelOutput.getMask();
 
-        float xRatio = displayMetrics.widthPixels * 1.0f / mask.getWidth();
-        float yRatio = displayMetrics.heightPixels * 1.0f / mask.getHeight();
-
         Bitmap edges = bitmapProcessing.getEdges(mask);
 
-        Random random = new Random();
+        Vector3 anchorPosition = getLocalDisplacement(frameHitDataDto.getCenterXPosition(),
+                frameHitDataDto.getCenterYPosition(), mask.getWidth(), mask.getHeight());
 
         for (int i = 0; i < mask.getHeight(); i++) {
             for (int j = 0; j < mask.getWidth(); j++) {
-                if (edges.getPixel(j, i) != 0 && random.nextFloat() < 0.1) {
-                    List<HitResult> hits = frame.hitTest(Math.round(i * xRatio), j * yRatio);
-                    Optional<HitResult> result = hits.stream()
-                            .filter(hitResult -> hitResult.getDistance() < maxDepth)
-                            .filter(hitResult -> hitResult.getDistance() > minDepth)
-                            .min(Comparator.comparingDouble(HitResult::getDistance));
+                if (edges.getPixel(j, i) != 0 && randomGenerator.nextFloat() < 0.1) {
+                    Vector3 pointPosition = getLocalDisplacement(j, i, mask.getWidth(), mask.getHeight());
+                    Vector3 localDisplacement = Vector3.subtract(pointPosition, anchorPosition);
+
                     int pixelValue = mask.getPixel(j, i);
-                    result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
+                    drawPoint(localDisplacement, pixelValue, anchorNode);
                 }
             }
         }
+    }
+
+    private Vector3 getLocalDisplacement(int screenX, int screenY, int maskWidth, int maskHeight) {
+        float xRatio = displayMetrics.widthPixels * 1.0f / maskWidth;
+        float yRatio = displayMetrics.heightPixels * 1.0f / maskHeight;
+
+        return new Vector3(screenX * xRatio, screenY * yRatio, 0);
     }
 }
