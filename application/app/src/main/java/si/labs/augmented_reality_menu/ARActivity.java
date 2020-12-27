@@ -50,7 +50,7 @@ public class ARActivity extends AppCompatActivity {
             bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
             arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> bitmapProjector.onFrame());
             menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
-            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this, bitmapProjector, menuItemListAdapter));
+            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this));
         } else {
             throw new RuntimeException("AR fragment is null");
         }

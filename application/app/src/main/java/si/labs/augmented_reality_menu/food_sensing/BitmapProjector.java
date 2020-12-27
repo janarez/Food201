@@ -14,6 +14,7 @@ import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.MaterialFactory;
@@ -21,9 +22,11 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +55,7 @@ public class BitmapProjector {
     private long nextProjectionTime; // in millis
 
     private ModelOutput modelOutput;
-    private final List<Anchor> currentAnchors;
+    private final List<AnchorNode> currentAnchors;
 
     public BitmapProjector(ArFragment arFragment, ARActivity arActivity, ModelExecutor modelExecutor) {
         this.arFragment = arFragment;
@@ -75,10 +78,10 @@ public class BitmapProjector {
                     ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
 
                     Anchor anchor = relativePosition.createAnchor();
-                    currentAnchors.add(anchor);
                     AnchorNode anchorNode = new AnchorNode(anchor);
                     anchorNode.setRenderable(sphere);
                     anchorNode.setParent(arFragment.getArSceneView().getScene());
+                    currentAnchors.add(anchorNode);
                 });
     }
 
@@ -151,9 +154,12 @@ public class BitmapProjector {
 
     private void projectPoints(Frame frame, List<MenuValueHolder> selectedLabels) {
 
+        Scene scene = arFragment.getArSceneView().getScene();
+
         // clean previous anchors
-        for (Anchor currentAnchor : currentAnchors) {
-            currentAnchor.detach();
+        for (AnchorNode currentAnchor : currentAnchors) {
+            currentAnchor.getAnchor().detach();
+            scene.removeChild(currentAnchor);
         }
 
         Set<Integer> labelsOfInterest = selectedLabels.stream()
@@ -192,17 +198,21 @@ public class BitmapProjector {
     }
 
     private void updateMenuRenderable(ModelOutput modelOutput, MenuItemListAdapter menuItemListAdapter) {
-        List<MenuValueHolder> valueHolders = new LinkedList<>();
+        Set<MenuValueHolder> valueHolders = new HashSet<>();
+        for (MenuValueHolder value : menuItemListAdapter.getValues()) {
+            if (value.isSelected()) {
+                valueHolders.add(value);
+            }
+        }
         for (LabelValueNamePair label : modelOutput.getLabels()) {
             valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
         }
 
+        List<MenuValueHolder> values = new ArrayList<>(valueHolders);
+        values.sort(Comparator.comparing(MenuValueHolder::getLabel));
+
         menuItemListAdapter.getValues().clear();
         menuItemListAdapter.addAll(valueHolders);
         menuItemListAdapter.notifyDataSetChanged();
-    }
-
-    public Optional<ModelOutput> getModelOutput() {
-        return Optional.ofNullable(modelOutput);
     }
 }

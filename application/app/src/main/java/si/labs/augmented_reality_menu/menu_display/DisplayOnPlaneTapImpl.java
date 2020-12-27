@@ -15,26 +15,19 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import java.util.Optional;
 
 import si.labs.augmented_reality_menu.ARActivity;
-import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
-import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListener {
     private static final String TAG = DisplayOnPlaneTapImpl.class.getSimpleName();
 
     private final BaseArFragment arFragment;
     private final ARActivity arActivity;
-    private final BitmapProjector bitmapProjector;
-    private final MenuItemListAdapter menuItemListAdapter;
     private TransformableNode menuNode;
 
     private boolean isPlaced;
 
-    public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity,
-                                 BitmapProjector bitmapProjector, MenuItemListAdapter menuItemListAdapter) {
+    public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity) {
         this.arFragment = arFragment;
         this.arActivity = arActivity;
-        this.bitmapProjector = bitmapProjector;
-        this.menuItemListAdapter = menuItemListAdapter;
 
         isPlaced = false;
     }
@@ -45,11 +38,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
             return;
         }
 
-        Optional<ModelOutput> modelOutputOpt = bitmapProjector.getModelOutput();
-        if (!modelOutputOpt.isPresent()) {
-            return;
-        }
-        ModelOutput modelOutput = modelOutputOpt.get();
+        isPlaced = true;
 
         Optional<ViewRenderable> menu = arActivity.getMenuRenderable();
         if (!menu.isPresent()) {
@@ -60,7 +49,7 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
             menuNode = new TransformableNode(arFragment.getTransformationSystem());
             menuNode.setRenderable(menu.get());
 
-            Quaternion menuRotationY = Quaternion.axisAngle(new Vector3(0, 1, 0), 180f);
+            Quaternion menuRotationY = Quaternion.axisAngle(new Vector3(0, 1, 0), 0f);
             Quaternion menuRotationX = Quaternion.axisAngle(new Vector3(1, 0, 0), -90);
 
             menuNode.setLocalRotation(Quaternion.multiply(menuRotationX, menuRotationY));
