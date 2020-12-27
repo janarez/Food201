@@ -9,25 +9,24 @@
     android:orientation="vertical"
     android:padding="4dp">
 
-    <ListView
-        android:id="@+id/menu_list_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@id/orbitHeader"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <TextView
         android:id="@+id/orbitHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/detected_dishes"
         android:textAlignment="center"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/menu_list_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/menu_list_view" />
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <ListView
+        android:id="@+id/menu_list_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/orbitHeader" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

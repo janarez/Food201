@@ -46,7 +46,6 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
         }
         ModelOutput modelOutput = modelOutputOpt.get();
 
-        // TODO: Handle labels + mask display differently. For now put labels inside random text box.
         Optional<ViewRenderable> menu = arActivity.getMenuRenderable();
         if (!menu.isPresent()) {
             return;
