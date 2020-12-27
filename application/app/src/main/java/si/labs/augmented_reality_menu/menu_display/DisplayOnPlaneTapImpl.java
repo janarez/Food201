@@ -12,13 +12,10 @@ import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.BaseArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
-import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListener {
@@ -30,16 +27,24 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
     private final MenuItemListAdapter menuItemListAdapter;
     private TransformableNode menuNode;
 
+    private boolean isPlaced;
+
     public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity,
                                  BitmapProjector bitmapProjector, MenuItemListAdapter menuItemListAdapter) {
         this.arFragment = arFragment;
         this.arActivity = arActivity;
         this.bitmapProjector = bitmapProjector;
         this.menuItemListAdapter = menuItemListAdapter;
+
+        isPlaced = false;
     }
 
     @Override
     public void onTapPlane(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
+        if (isPlaced) {
+            return;
+        }
+
         Optional<ModelOutput> modelOutputOpt = bitmapProjector.getModelOutput();
         if (!modelOutputOpt.isPresent()) {
             return;
@@ -67,18 +72,5 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
         menuNode.setParent(anchorNode);
         menuNode.setRenderable(menu.get());
-
-        updateMenuRenderable(modelOutput);
-    }
-
-    private void updateMenuRenderable(ModelOutput modelOutput) {
-        List<MenuValueHolder> valueHolders = new LinkedList<>();
-        for (LabelValueNamePair label : modelOutput.getLabels()) {
-            valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
-        }
-
-        menuItemListAdapter.getValues().clear();
-        menuItemListAdapter.addAll(valueHolders);
-        menuItemListAdapter.notifyDataSetChanged();
     }
 }

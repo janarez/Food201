@@ -41,7 +41,7 @@ public final class BitmapProcessing {
 
                 if (results.containsKey(currentPixel)) {
                     updateBoundingBoxDto(results.get(currentPixel), j, i);
-                } else {
+                } else if (classesOfInterest.contains(currentPixel)) {
                     BoundingBoxDto dto = new BoundingBoxDto(currentPixel);
                     dto.setXMax(j);
                     dto.setXMax(j);

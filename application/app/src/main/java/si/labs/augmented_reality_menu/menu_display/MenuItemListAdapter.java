@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.R;
 
@@ -58,6 +59,12 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
         });
 
         return convertView;
+    }
+
+    public List<MenuValueHolder> getSelectedValues() {
+        return getValues().stream()
+                .filter(MenuValueHolder::isSelected)
+                .collect(Collectors.toList());
     }
 
     public List<MenuValueHolder> getValues() {

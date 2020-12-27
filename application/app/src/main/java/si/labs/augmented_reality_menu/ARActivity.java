@@ -105,6 +105,10 @@ public class ARActivity extends AppCompatActivity {
         return Optional.ofNullable(menuRenderable);
     }
 
+    public Optional<MenuItemListAdapter> getMenuListAdapter() {
+        return Optional.ofNullable(menuItemListAdapter);
+    }
+
     private void initMenuRenderable(ViewRenderable menuRenderable) {
         ListView menuListView = menuRenderable.getView().findViewById(R.id.menu_list_view);
         menuListView.setAdapter(menuItemListAdapter);
