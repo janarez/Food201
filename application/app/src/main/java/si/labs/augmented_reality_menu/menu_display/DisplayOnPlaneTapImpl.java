@@ -1,16 +1,10 @@
 package si.labs.augmented_reality_menu.menu_display;
 
-import android.graphics.ImageFormat;
-import android.media.Image;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.widget.TextView;
 
 import com.google.ar.core.Anchor;
-import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
@@ -18,11 +12,13 @@ import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.BaseArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 import si.labs.augmented_reality_menu.ARActivity;
-import si.labs.augmented_reality_menu.R;
-import si.labs.augmented_reality_menu.model.ModelExecutor;
+import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
+import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListener {
@@ -30,41 +26,25 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
 
     private final BaseArFragment arFragment;
     private final ARActivity arActivity;
-    private final ModelExecutor modelExecutor;
+    private final BitmapProjector bitmapProjector;
+    private final MenuItemListAdapter menuItemListAdapter;
     private TransformableNode menuNode;
 
-    public DisplayOnPlaneTapImpl(ModelExecutor modelExecutor, BaseArFragment arFragment, ARActivity arActivity) {
+    public DisplayOnPlaneTapImpl(BaseArFragment arFragment, ARActivity arActivity,
+                                 BitmapProjector bitmapProjector, MenuItemListAdapter menuItemListAdapter) {
         this.arFragment = arFragment;
         this.arActivity = arActivity;
-        this.modelExecutor = modelExecutor;
+        this.bitmapProjector = bitmapProjector;
+        this.menuItemListAdapter = menuItemListAdapter;
     }
 
     @Override
     public void onTapPlane(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
-        ModelOutput modelOutput = null;
-
-        // Get camera scene for the model.
-        Frame frame = arFragment.getArSceneView().getArFrame();
-        if (frame != null) {
-            // Copy the camera stream to a bitmap
-            try (Image sceneImage = frame.acquireCameraImage()) {
-                Log.d(TAG, String.format("Acquired scene image [%d, %d] in format %d",
-                        sceneImage.getHeight(), sceneImage.getWidth(), sceneImage.getFormat()));
-
-                // The scene image should and must be in given format as per documentation.
-                if (sceneImage.getFormat() != ImageFormat.YUV_420_888) {
-                    throw new UnsupportedOperationException(
-                            String.format("Cannot process scene image in format %d (only 35 is accepted)", sceneImage.getFormat()));
-                }
-
-                // Pass to model.
-                modelOutput = modelExecutor.run(sceneImage);
-            } catch (NotYetAvailableException e) {
-                Log.e(TAG, "Could not get scene image.");
-            } catch (UnsupportedOperationException e) {
-                Log.e(TAG, e.getMessage());
-            }
+        Optional<ModelOutput> modelOutputOpt = bitmapProjector.getModelOutput();
+        if (!modelOutputOpt.isPresent()) {
+            return;
         }
+        ModelOutput modelOutput = modelOutputOpt.get();
 
         // TODO: Handle labels + mask display differently. For now put labels inside random text box.
         Optional<ViewRenderable> menu = arActivity.getMenuRenderable();
@@ -89,8 +69,17 @@ public class DisplayOnPlaneTapImpl implements BaseArFragment.OnTapArPlaneListene
         menuNode.setParent(anchorNode);
         menuNode.setRenderable(menu.get());
 
-        // Display the obtained labels.
-        TextView textBox = menu.get().getView().findViewById(R.id.orbitHeader);
-        textBox.setText(modelOutput != null ? modelOutput.labelsAsSingleString() : "Segmentation failed.");
+        updateMenuRenderable(modelOutput);
+    }
+
+    private void updateMenuRenderable(ModelOutput modelOutput) {
+        List<MenuValueHolder> valueHolders = new LinkedList<>();
+        for (LabelValueNamePair label : modelOutput.getLabels()) {
+            valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+        }
+
+        menuItemListAdapter.getValues().clear();
+        menuItemListAdapter.addAll(valueHolders);
+        menuItemListAdapter.notifyDataSetChanged();
     }
 }

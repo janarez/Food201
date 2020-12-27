@@ -32,6 +32,7 @@ import java.util.Random;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.food_sensing.dto.FrameHitDataDto;
+import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 import si.labs.augmented_reality_menu.model.ModelOutput;
 
@@ -46,10 +47,11 @@ public class BitmapProjector {
     private final BitmapProcessing bitmapProcessing;
     private final Random randomGenerator;
     private ModelRenderable sphere;
-
     private final DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
     private long nextProjectionTime; // in millis
+
+    private ModelOutput modelOutput;
 
     public BitmapProjector(ArFragment arFragment, ARActivity arActivity, ModelExecutor modelExecutor) {
         this.arFragment = arFragment;
@@ -64,9 +66,8 @@ public class BitmapProjector {
         displayMetrics = new DisplayMetrics();
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
-        MaterialFactory.makeOpaqueWithColor(arActivity, new Color(0, 0, 0)).thenAccept(material -> {
-            sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
-        });
+        MaterialFactory.makeOpaqueWithColor(arActivity, new Color(0, 0, 0))
+                .thenAccept(material -> sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material));
     }
 
     private void drawPoint(HitResult relativePosition, AnchorNode anchorNode) {
@@ -100,6 +101,12 @@ public class BitmapProjector {
             nextProjectionTime = deltaTime + newTime;
         }
 
+        Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
+        if (!modelOutputOpt.isPresent()) {
+            return;
+        }
+        modelOutput = modelOutputOpt.get();
+
         Optional<FrameHitDataDto> frameHitDataDtoOptional = hitRandomPoint(frame);
         if (!frameHitDataDtoOptional.isPresent()) {
             return;
@@ -112,14 +119,7 @@ public class BitmapProjector {
         anchorNode.setParent(scene);
         anchorNode.setRenderable(sphere);
 
-        projectPoints(frame, frameHitDataDto, anchorNode);
-
-//        sphereDataFuture.handle((sphereDataDtos,throwable) -> {
-//            for (SphereDataDto sphereDataDto : sphereDataDtos) {
-//                drawPoint(sphereDataDto.getLocalPosition(), anchorNode);
-//            }
-//            return null;
-//        });
+//        projectPoints(frame, anchorNode);
     }
 
     private Optional<FrameHitDataDto> hitRandomPoint(Frame frame) {
@@ -177,13 +177,8 @@ public class BitmapProjector {
         }
     }
 
-    private void projectPoints(Frame frame, FrameHitDataDto frameHitDataDto, AnchorNode anchor) {
-        Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
-        if (!modelOutputOpt.isPresent()) {
-            return;
-        }
-        ModelOutput modelOutput = modelOutputOpt.get();
-        List<String> labels = modelOutput.getLabels();
+    private void projectPoints(Frame frame, AnchorNode anchor) {
+        List<LabelValueNamePair> labels = modelOutput.getLabels();
 
 //        StringBuilder builder = new StringBuilder();
 //        for (String label : labels) {
@@ -197,7 +192,7 @@ public class BitmapProjector {
 
         for (int i = 0; i < mask.getHeight(); i++) {
             for (int j = 0; j < mask.getWidth(); j++) {
-                if (edges.getPixel(j, i) != 0) {
+                if (edges.getPixel(j, i) != 0 && randomGenerator.nextFloat() < 0.01) {
                     Optional<HitResult> pointPosition = getHit(frame, j, i, mask.getWidth(), mask.getHeight());
                     pointPosition.ifPresent(hitResult -> drawPoint(hitResult, anchor));
                 }
@@ -211,5 +206,9 @@ public class BitmapProjector {
 
         List<HitResult> hits = frame.hitTest(Math.round(maskX * xRatio), maskY * yRatio);
         return getTheOptimalHit(hits);
+    }
+
+    public Optional<ModelOutput> getModelOutput() {
+        return Optional.ofNullable(modelOutput);
     }
 }

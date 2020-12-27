@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,10 +13,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 
+import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
+import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
+import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 
 public class ARActivity extends AppCompatActivity {
@@ -25,6 +29,7 @@ public class ARActivity extends AppCompatActivity {
     private ArFragment arFragment;
     private ViewRenderable menuRenderable;
     private ModelExecutor modelExecutor;
+    private MenuItemListAdapter menuItemListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +49,8 @@ public class ARActivity extends AppCompatActivity {
         if (arFragment != null) {
             bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
             arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> bitmapProjector.onFrame());
-//            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(modelExecutor, arFragment, this));
+            menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
+            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this, bitmapProjector, menuItemListAdapter));
         } else {
             throw new RuntimeException("AR fragment is null");
         }
@@ -58,7 +64,7 @@ public class ARActivity extends AppCompatActivity {
                         .show();
                 Log.e(TAG, getResources().getString(R.string.error_creating_menu_view), throwable);
             }
-
+            initMenuRenderable(viewRenderable);
             menuRenderable = viewRenderable;
             return null;
         });
@@ -97,5 +103,10 @@ public class ARActivity extends AppCompatActivity {
 
     public Optional<ViewRenderable> getMenuRenderable() {
         return Optional.ofNullable(menuRenderable);
+    }
+
+    private void initMenuRenderable(ViewRenderable menuRenderable) {
+        ListView menuListView = menuRenderable.getView().findViewById(R.id.menu_list_view);
+        menuListView.setAdapter(menuItemListAdapter);
     }
 }
