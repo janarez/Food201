@@ -10,6 +10,7 @@ import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
@@ -28,7 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.food_sensing.dto.FrameHitDataDto;
@@ -45,6 +45,7 @@ public class BitmapProjector {
     private final ModelExecutor modelExecutor;
     private final BitmapProcessing bitmapProcessing;
     private final Random randomGenerator;
+    private ModelRenderable sphere;
 
     private final DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
@@ -62,21 +63,20 @@ public class BitmapProjector {
 
         displayMetrics = new DisplayMetrics();
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+        MaterialFactory.makeOpaqueWithColor(arActivity, new Color(0, 0, 0)).thenAccept(material -> {
+            sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
+        });
     }
 
-    private void drawPoint(Vector3 relativePosition, int maskValue, AnchorNode anchorNode) {
+    private void drawPoint(HitResult relativePosition, AnchorNode anchorNode) {
 
-        Color sphereColor = new Color();
-        sphereColor.set(maskValue);
-        MaterialFactory.makeOpaqueWithColor(arActivity, sphereColor)
-                .thenAccept(material -> {
-                    ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
+        Pose hitPose = relativePosition.getHitPose();
 
-                    Node childNode = new Node();
-                    childNode.setParent(anchorNode);
-                    childNode.setLocalPosition(relativePosition);
-                    childNode.setRenderable(sphere);
-                });
+        Node childNode = new Node();
+        childNode.setParent(anchorNode);
+        childNode.setWorldPosition(new Vector3(hitPose.tx(), hitPose.ty(), hitPose.tz()));
+        childNode.setRenderable(sphere);
     }
 
     public void onFrame() {
@@ -86,6 +86,11 @@ public class BitmapProjector {
         if (frame == null || frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
             return;
         }
+
+        if (sphere == null) {
+            return;
+        }
+
         long newTime = Calendar.getInstance().getTimeInMillis();
 
         // don't constantly try to classify
@@ -101,14 +106,20 @@ public class BitmapProjector {
         }
         FrameHitDataDto frameHitDataDto = frameHitDataDtoOptional.get();
 
-        Runnable projectPointsRunnable = () -> projectPoints(frame, frameHitDataDto);
-        CompletableFuture.runAsync(projectPointsRunnable).handle((aVoid, throwable) -> {
-            if (throwable != null) {
-                Log.e(TAG, "encountered error");
-                throwable.printStackTrace();
-            }
-            return null;
-        });
+        Scene scene = arFragment.getArSceneView().getScene();
+        Anchor mainAnchor = frameHitDataDto.getCentralPointHit().createAnchor();
+        AnchorNode anchorNode = new AnchorNode(mainAnchor);
+        anchorNode.setParent(scene);
+        anchorNode.setRenderable(sphere);
+
+        projectPoints(frame, frameHitDataDto, anchorNode);
+
+//        sphereDataFuture.handle((sphereDataDtos,throwable) -> {
+//            for (SphereDataDto sphereDataDto : sphereDataDtos) {
+//                drawPoint(sphereDataDto.getLocalPosition(), anchorNode);
+//            }
+//            return null;
+//        });
     }
 
     private Optional<FrameHitDataDto> hitRandomPoint(Frame frame) {
@@ -166,13 +177,7 @@ public class BitmapProjector {
         }
     }
 
-    private void projectPoints(Frame frame, FrameHitDataDto frameHitDataDto) {
-        Scene scene = arFragment.getArSceneView().getScene();
-
-        Anchor mainAnchor = frameHitDataDto.getCentralPointHit().createAnchor();
-        AnchorNode anchorNode = new AnchorNode(mainAnchor);
-        anchorNode.setParent(scene);
-
+    private void projectPoints(Frame frame, FrameHitDataDto frameHitDataDto, AnchorNode anchor) {
         Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
         if (!modelOutputOpt.isPresent()) {
             return;
@@ -190,26 +195,21 @@ public class BitmapProjector {
 
         Bitmap edges = bitmapProcessing.getEdges(mask);
 
-        Vector3 anchorPosition = getLocalDisplacement(frameHitDataDto.getCenterXPosition(),
-                frameHitDataDto.getCenterYPosition(), mask.getWidth(), mask.getHeight());
-
         for (int i = 0; i < mask.getHeight(); i++) {
             for (int j = 0; j < mask.getWidth(); j++) {
-                if (edges.getPixel(j, i) != 0 && randomGenerator.nextFloat() < 0.1) {
-                    Vector3 pointPosition = getLocalDisplacement(j, i, mask.getWidth(), mask.getHeight());
-                    Vector3 localDisplacement = Vector3.subtract(pointPosition, anchorPosition);
-
-                    int pixelValue = mask.getPixel(j, i);
-                    drawPoint(localDisplacement, pixelValue, anchorNode);
+                if (edges.getPixel(j, i) != 0) {
+                    Optional<HitResult> pointPosition = getHit(frame, j, i, mask.getWidth(), mask.getHeight());
+                    pointPosition.ifPresent(hitResult -> drawPoint(hitResult, anchor));
                 }
             }
         }
     }
 
-    private Vector3 getLocalDisplacement(int screenX, int screenY, int maskWidth, int maskHeight) {
+    private Optional<HitResult> getHit(Frame frame, int maskX, int maskY, int maskWidth, int maskHeight) {
         float xRatio = displayMetrics.widthPixels * 1.0f / maskWidth;
         float yRatio = displayMetrics.heightPixels * 1.0f / maskHeight;
 
-        return new Vector3(screenX * xRatio, screenY * yRatio, 0);
+        List<HitResult> hits = frame.hitTest(Math.round(maskX * xRatio), maskY * yRatio);
+        return getTheOptimalHit(hits);
     }
 }
