@@ -24,7 +24,9 @@ public class RectangleFactory {
     }
 
     public CompletableFuture<ModelRenderable> getSquare(Context context, List<Node> corners, Color color) {
-        return materialFactory.makeOpaqueWithColor(context, color)
+        Color squareColor = new Color(color.r, color.g, color.b, 0.5f);
+
+        return materialFactory.makeOpaqueWithColor(context, squareColor)
                 .thenCompose(material -> getSquare(corners, material));
     }
 

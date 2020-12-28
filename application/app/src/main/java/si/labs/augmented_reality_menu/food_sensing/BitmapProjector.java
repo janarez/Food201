@@ -57,6 +57,7 @@ public class BitmapProjector {
 
     private ModelOutput modelOutput;
     private final List<AnchorNode> currentAnchors;
+    private final List<Node> squareHolders;
 
     public BitmapProjector(ArFragment arFragment, ARActivity arActivity, ModelExecutor modelExecutor) {
         this.arFragment = arFragment;
@@ -69,6 +70,7 @@ public class BitmapProjector {
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
         deltaTime = 5000;
         currentAnchors = new LinkedList<>();
+        squareHolders = new LinkedList<>();
 
         displayMetrics = new DisplayMetrics();
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -152,6 +154,10 @@ public class BitmapProjector {
             }
             scene.removeChild(currentAnchor);
         }
+        for (Node squareHolder : squareHolders) {
+            scene.removeChild(squareHolder);
+        }
+        squareHolders.clear();
         currentAnchors.clear();
 
         Set<Integer> labelsOfInterest = selectedLabels.stream()
@@ -214,17 +220,25 @@ public class BitmapProjector {
         pointsOpt.add(pointPosition3);
 
         if (pointsOpt.stream().allMatch(Optional::isPresent)) {
+            Scene scene = arFragment.getArSceneView().getScene();
             List<Node> points = pointsOpt.stream()
                     .map(Optional::get)
                     .map(hitResult -> {
                         AnchorNode anchorNode = new AnchorNode(hitResult.createAnchor());
                         currentAnchors.add(anchorNode);
+                        anchorNode.setParent(scene);
                         return anchorNode;
                     })
                     .collect(Collectors.toList());
 
             points.forEach(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
-            rectangleFactory.getSquare(arActivity, points, new Color(boxDto.getClassOfInterest()));
+            rectangleFactory.getSquare(arActivity, points, new Color(boxDto.getClassOfInterest()))
+                    .thenAccept(modelRenderable -> {
+                        Node node = new Node();
+                        node.setParent(scene);
+                        node.setRenderable(modelRenderable);
+                        squareHolders.add(node);
+                    });
         }
     }
 
@@ -235,7 +249,6 @@ public class BitmapProjector {
                     ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
 
                     anchorNode.setRenderable(sphere);
-                    anchorNode.setParent(arFragment.getArSceneView().getScene());
                 });
     }
 }
