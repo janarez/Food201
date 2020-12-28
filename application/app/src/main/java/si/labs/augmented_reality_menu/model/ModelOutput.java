@@ -10,9 +10,9 @@ import java.util.List;
  */
 public class ModelOutput {
     private final Bitmap mask;
-    private final List<String> labels;
+    private final List<LabelValueNamePair> labels;
 
-    public ModelOutput(Bitmap mask, List<String> labels) {
+    public ModelOutput(Bitmap mask, List<LabelValueNamePair> labels) {
         this.mask = mask;
         this.labels = labels;
     }
@@ -25,7 +25,7 @@ public class ModelOutput {
         return mask;
     }
 
-    public List<String> getLabels() {
+    public List<LabelValueNamePair> getLabels() {
         return labels;
     }
 }

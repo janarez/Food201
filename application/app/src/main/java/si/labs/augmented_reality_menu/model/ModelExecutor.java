@@ -132,7 +132,7 @@ public class ModelExecutor {
             }
         }
         // Convert class ID's to text labels.
-        List<String> labels = convertLabels(idLabels);
+        List<LabelValueNamePair> labels = convertLabels(idLabels);
         
         // Resize to original image size.
         Bitmap enlargedMask = Bitmap.createScaledBitmap(mask, width, height, false);
@@ -147,10 +147,10 @@ public class ModelExecutor {
     /**
      * Converts id's to string labels.
      */
-    private List<String> convertLabels(HashSet<Integer> ids) {
-        List<String> strings = new ArrayList<>(ids.size());
+    private List<LabelValueNamePair> convertLabels(HashSet<Integer> ids) {
+        List<LabelValueNamePair> strings = new ArrayList<>(ids.size());
         for (int id : ids) {
-            strings.add(labels.get(id));
+            strings.add(new LabelValueNamePair(labels.get(id), labelColors[id]));
         }
         Log.d(TAG, String.format("Found %d labels in mask.", ids.size()));
         return strings;

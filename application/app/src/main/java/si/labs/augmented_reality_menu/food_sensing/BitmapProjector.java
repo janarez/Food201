@@ -5,43 +5,59 @@ import android.graphics.ImageFormat;
 import android.media.Image;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
+import com.google.ar.core.Trackable;
+import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
-import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.ARActivity;
+import si.labs.augmented_reality_menu.food_sensing.dto.BoundingBoxDto;
+import si.labs.augmented_reality_menu.food_sensing.factories.MaterialFactoryCache;
+import si.labs.augmented_reality_menu.food_sensing.factories.RectangleFactory;
+import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
+import si.labs.augmented_reality_menu.menu_display.MenuValueHolder;
+import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class BitmapProjector {
     private static final String TAG = BitmapProjector.class.getSimpleName();
-    private static final int maxDepth = 1; // 1 meter
-    private static final float minDepth = 0.1f;
+
+    private final MaterialFactoryCache materialFactoryCache;
+    private final RectangleFactory rectangleFactory;
     private final ArFragment arFragment;
     private final ARActivity arActivity;
     private final ModelExecutor modelExecutor;
     private final BitmapProcessing bitmapProcessing;
-
-    private DisplayMetrics displayMetrics;
+    private final DisplayMetrics displayMetrics;
     private final long deltaTime; // in millis
     private long nextProjectionTime; // in millis
+
+    private ModelOutput modelOutput;
+    private final List<AnchorNode> currentAnchors;
+    private final List<Node> squareHolders;
 
     public BitmapProjector(ArFragment arFragment, ARActivity arActivity, ModelExecutor modelExecutor) {
         this.arFragment = arFragment;
@@ -49,44 +65,63 @@ public class BitmapProjector {
         this.modelExecutor = modelExecutor;
         this.bitmapProcessing = new BitmapProcessing();
 
+        materialFactoryCache = new MaterialFactoryCache();
+        rectangleFactory = new RectangleFactory(materialFactoryCache);
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
         deltaTime = 5000;
+        currentAnchors = new LinkedList<>();
+        squareHolders = new LinkedList<>();
 
         displayMetrics = new DisplayMetrics();
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-    }
-
-    private void drawPoint(Scene scene, HitResult hitResult, int maskValue) {
-
-        Color sphereColor = new Color(); // TODO
-        sphereColor.set(maskValue);
-        MaterialFactory.makeOpaqueWithColor(arActivity, sphereColor)
-                .thenAccept(material -> {
-                    ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
-
-                    Anchor anchor = hitResult.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setRenderable(sphere);
-                    anchorNode.setParent(scene);
-                });
     }
 
     public void onFrame() {
 
         long newTime = Calendar.getInstance().getTimeInMillis();
 
+        // don't constantly try to classify
         if (nextProjectionTime > newTime) {
             return;
         } else {
             nextProjectionTime = deltaTime + newTime;
         }
 
-        ModelOutput modelOutput;
+        // if not tracking then wait
         Frame frame = arFragment.getArSceneView().getArFrame();
-        if (frame == null) {
+        if (frame == null || frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
             return;
         }
 
+        Optional<MenuItemListAdapter> menuItemListAdapterOpt = arActivity.getMenuListAdapter();
+        if (!menuItemListAdapterOpt.isPresent()) {
+            return;
+        }
+        MenuItemListAdapter menuItemListAdapter = menuItemListAdapterOpt.get();
+        List<MenuValueHolder> selectedValues = menuItemListAdapter.getSelectedValues();
+
+        Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
+        if (!modelOutputOpt.isPresent()) {
+            return;
+        }
+        modelOutput = modelOutputOpt.get();
+        updateMenuRenderable(modelOutput, menuItemListAdapter);
+
+        projectPoints(frame, selectedValues);
+    }
+
+    private Optional<HitResult> getTheOptimalHit(List<HitResult> hits) {
+        return hits.stream()
+//                .filter(hitResult -> hitResult.getDistance() < maxDepth)
+//                .filter(hitResult -> hitResult.getDistance() > minDepth)
+                .filter(hitResult -> {
+                    Trackable trackable = hitResult.getTrackable();
+                    return trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose());
+                })
+                .min(Comparator.comparingDouble(HitResult::getDistance));
+    }
+
+    private Optional<ModelOutput> getModelOutput(Frame frame) {
         try (Image sceneImage = frame.acquireCameraImage()) {
             Log.d(TAG, String.format("Acquired scene image [%d, %d] in format %d",
                     sceneImage.getHeight(), sceneImage.getWidth(), sceneImage.getFormat()));
@@ -98,45 +133,122 @@ public class BitmapProjector {
             }
 
             // Pass to model.
-            modelOutput = modelExecutor.run(sceneImage);
+            return Optional.of(modelExecutor.run(sceneImage));
         } catch (NotYetAvailableException e) {
             Log.e(TAG, "Could not get scene image.");
-            return;
+            return Optional.empty();
         } catch (UnsupportedOperationException e) {
             Log.e(TAG, e.getMessage());
-            return;
+            return Optional.empty();
         }
+    }
+
+    private void projectPoints(Frame frame, List<MenuValueHolder> selectedLabels) {
 
         Scene scene = arFragment.getArSceneView().getScene();
-        List<String> labels = modelOutput.getLabels();
 
-        StringBuilder builder = new StringBuilder();
-        for (String label : labels) {
-            builder.append(label).append(" ");
+        // clean previous anchors
+        for (AnchorNode currentAnchor : currentAnchors) {
+            if (currentAnchor.getAnchor() != null) {
+                currentAnchor.getAnchor().detach();
+            }
+            scene.removeChild(currentAnchor);
         }
-        Toast.makeText(arActivity, builder.toString(), Toast.LENGTH_LONG).show();
+        for (Node squareHolder : squareHolders) {
+            scene.removeChild(squareHolder);
+        }
+        squareHolders.clear();
+        currentAnchors.clear();
 
+        Set<Integer> labelsOfInterest = selectedLabels.stream()
+                .map(MenuValueHolder::getLabelValue)
+                .collect(Collectors.toSet());
         Bitmap mask = modelOutput.getMask();
 
-        float xRatio = displayMetrics.widthPixels * 1.0f / mask.getWidth();
-        float yRatio = displayMetrics.heightPixels * 1.0f / mask.getHeight();
+        Collection<BoundingBoxDto> boundingBoxes = bitmapProcessing.getBoundingBoxes(mask, labelsOfInterest);
 
-        Bitmap edges = bitmapProcessing.getEdges(mask);
+        for (BoundingBoxDto boxDto : boundingBoxes) {
+            drawRectangle(frame, mask, boxDto);
+        }
+    }
 
-        Random random = new Random();
+    private Optional<HitResult> getHit(Frame frame, int maskX, int maskY, int maskWidth, int maskHeight) {
+        float xRatio = displayMetrics.widthPixels * 1.0f / maskWidth;
+        float yRatio = displayMetrics.heightPixels * 1.0f / maskHeight;
 
-        for (int i = 0; i < mask.getHeight(); i++) {
-            for (int j = 0; j < mask.getWidth(); j++) {
-                if (edges.getPixel(j, i) != 0 && random.nextFloat() < 0.1) {
-                    List<HitResult> hits = frame.hitTest(Math.round(i * xRatio), j * yRatio);
-                    Optional<HitResult> result = hits.stream()
-                            .filter(hitResult -> hitResult.getDistance() < maxDepth)
-                            .filter(hitResult -> hitResult.getDistance() > minDepth)
-                            .min(Comparator.comparingDouble(HitResult::getDistance));
-                    int pixelValue = mask.getPixel(j, i);
-                    result.ifPresent(hitResult -> drawPoint(scene, hitResult, pixelValue));
-                }
+        List<HitResult> hits = frame.hitTest(Math.round(maskX * xRatio), maskY * yRatio);
+        return getTheOptimalHit(hits);
+    }
+
+    private void updateMenuRenderable(ModelOutput modelOutput, MenuItemListAdapter menuItemListAdapter) {
+        Set<MenuValueHolder> valueHolders = new HashSet<>();
+        for (MenuValueHolder value : menuItemListAdapter.getValues()) {
+            if (value.isSelected()) {
+                valueHolders.add(value);
             }
         }
+        for (LabelValueNamePair label : modelOutput.getLabels()) {
+            valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+        }
+
+        List<MenuValueHolder> values = new ArrayList<>(valueHolders);
+        values.sort(Comparator.comparing(MenuValueHolder::getLabel));
+
+        menuItemListAdapter.getValues().clear();
+        menuItemListAdapter.addAll(valueHolders);
+        menuItemListAdapter.notifyDataSetChanged();
+    }
+
+    private void drawRectangle(Frame frame, Bitmap mask, BoundingBoxDto boxDto) {
+
+        List<Optional<HitResult>> pointsOpt = new LinkedList<>();
+
+        // min min
+        Optional<HitResult> pointPosition1 = getHit(frame, boxDto.getXMin(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition1);
+
+        // min max
+        Optional<HitResult> pointPosition2 = getHit(frame, boxDto.getXMin(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition2);
+
+        // max max
+        Optional<HitResult> pointPosition4 = getHit(frame, boxDto.getXMax(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition4);
+
+        // max min
+        Optional<HitResult> pointPosition3 = getHit(frame, boxDto.getXMax(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition3);
+
+        if (pointsOpt.stream().allMatch(Optional::isPresent)) {
+            Scene scene = arFragment.getArSceneView().getScene();
+            List<Node> points = pointsOpt.stream()
+                    .map(Optional::get)
+                    .map(hitResult -> {
+                        AnchorNode anchorNode = new AnchorNode(hitResult.createAnchor());
+                        currentAnchors.add(anchorNode);
+                        anchorNode.setParent(scene);
+                        return anchorNode;
+                    })
+                    .collect(Collectors.toList());
+
+            points.forEach(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
+            rectangleFactory.getSquare(arActivity, points, new Color(boxDto.getClassOfInterest()))
+                    .thenAccept(modelRenderable -> {
+                        Node node = new Node();
+                        node.setParent(scene);
+                        node.setRenderable(modelRenderable);
+                        squareHolders.add(node);
+                    });
+        }
+    }
+
+    private void drawPoint(Node anchorNode, int labelValue) {
+
+        materialFactoryCache.makeOpaqueWithColor(arActivity, new Color(labelValue))
+                .thenAccept(material -> {
+                    ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
+
+                    anchorNode.setRenderable(sphere);
+                });
     }
 }
