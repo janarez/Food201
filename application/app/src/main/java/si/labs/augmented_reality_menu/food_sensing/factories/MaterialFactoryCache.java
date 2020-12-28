@@ -23,7 +23,7 @@ public class MaterialFactoryCache {
             returnedFuture = new CompletableFuture<>();
             returnedFuture.complete(materialCache.get(color));
         } else {
-            returnedFuture = MaterialFactory.makeOpaqueWithColor(context, color).thenApply(material -> {
+            returnedFuture = MaterialFactory.makeTransparentWithColor(context, color).thenApply(material -> {
                 materialCache.putIfAbsent(color, material);
                 return material;
             });
