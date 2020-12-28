@@ -29,7 +29,7 @@ public class ModelExecutor {
     private Interpreter interpreter;
 
     // Model constants.
-    private static final String MODEL_FILE = "full_51.tflite";
+    private static final String MODEL_FILE = "unet_71.tflite";
     private static final String LABEL_FILE = "labels.txt";
 
     private static final int IMAGE_HEIGHT = 128;

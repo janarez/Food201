@@ -14,6 +14,9 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {
@@ -55,4 +58,7 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite:2.3.0'
     // Image to tensor manipulation.
     implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
+    // Tensorflow Ops.
+    // TODO: Delete if the preprocessing layers are removed. Also the abifilter.
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0nn'
 }
