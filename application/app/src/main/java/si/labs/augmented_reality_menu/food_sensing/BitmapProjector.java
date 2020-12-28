@@ -6,7 +6,6 @@ import android.media.Image;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
-import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -14,10 +13,10 @@ import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
-import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
@@ -35,6 +34,8 @@ import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.ARActivity;
 import si.labs.augmented_reality_menu.food_sensing.dto.BoundingBoxDto;
+import si.labs.augmented_reality_menu.food_sensing.factories.MaterialFactoryCache;
+import si.labs.augmented_reality_menu.food_sensing.factories.RectangleFactory;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
 import si.labs.augmented_reality_menu.menu_display.MenuValueHolder;
 import si.labs.augmented_reality_menu.model.LabelValueNamePair;
@@ -43,9 +44,9 @@ import si.labs.augmented_reality_menu.model.ModelOutput;
 
 public class BitmapProjector {
     private static final String TAG = BitmapProjector.class.getSimpleName();
-    private static final int MAX_DEPTH = 1; // 1 meter
-    private static final float MIN_DEPTH = 0.1f;
 
+    private final MaterialFactoryCache materialFactoryCache;
+    private final RectangleFactory rectangleFactory;
     private final ArFragment arFragment;
     private final ARActivity arActivity;
     private final ModelExecutor modelExecutor;
@@ -63,26 +64,14 @@ public class BitmapProjector {
         this.modelExecutor = modelExecutor;
         this.bitmapProcessing = new BitmapProcessing();
 
+        materialFactoryCache = new MaterialFactoryCache();
+        rectangleFactory = new RectangleFactory(materialFactoryCache);
         nextProjectionTime = Calendar.getInstance().getTimeInMillis();
         deltaTime = 5000;
         currentAnchors = new LinkedList<>();
 
         displayMetrics = new DisplayMetrics();
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-    }
-
-    private void drawPoint(HitResult relativePosition, int labelValue) {
-
-        MaterialFactory.makeOpaqueWithColor(arActivity, new Color(labelValue))
-                .thenAccept(material -> {
-                    ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, new Vector3(0, 0, 0), material);
-
-                    Anchor anchor = relativePosition.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setRenderable(sphere);
-                    anchorNode.setParent(arFragment.getArSceneView().getScene());
-                    currentAnchors.add(anchorNode);
-                });
     }
 
     public void onFrame() {
@@ -158,9 +147,12 @@ public class BitmapProjector {
 
         // clean previous anchors
         for (AnchorNode currentAnchor : currentAnchors) {
-            currentAnchor.getAnchor().detach();
+            if (currentAnchor.getAnchor() != null) {
+                currentAnchor.getAnchor().detach();
+            }
             scene.removeChild(currentAnchor);
         }
+        currentAnchors.clear();
 
         Set<Integer> labelsOfInterest = selectedLabels.stream()
                 .map(MenuValueHolder::getLabelValue)
@@ -170,22 +162,7 @@ public class BitmapProjector {
         Collection<BoundingBoxDto> boundingBoxes = bitmapProcessing.getBoundingBoxes(mask, labelsOfInterest);
 
         for (BoundingBoxDto boxDto : boundingBoxes) {
-
-            // min min
-            Optional<HitResult> pointPosition1 = getHit(frame, boxDto.getXMin(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
-            pointPosition1.ifPresent(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
-
-            // min max
-            Optional<HitResult> pointPosition2 = getHit(frame, boxDto.getXMin(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
-            pointPosition2.ifPresent(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
-
-            // max min
-            Optional<HitResult> pointPosition3 = getHit(frame, boxDto.getXMax(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
-            pointPosition3.ifPresent(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
-
-            // max max
-            Optional<HitResult> pointPosition4 = getHit(frame, boxDto.getXMax(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
-            pointPosition4.ifPresent(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
+            drawRectangle(frame, mask, boxDto);
         }
     }
 
@@ -214,5 +191,51 @@ public class BitmapProjector {
         menuItemListAdapter.getValues().clear();
         menuItemListAdapter.addAll(valueHolders);
         menuItemListAdapter.notifyDataSetChanged();
+    }
+
+    private void drawRectangle(Frame frame, Bitmap mask, BoundingBoxDto boxDto) {
+
+        List<Optional<HitResult>> pointsOpt = new LinkedList<>();
+
+        // min min
+        Optional<HitResult> pointPosition1 = getHit(frame, boxDto.getXMin(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition1);
+
+        // min max
+        Optional<HitResult> pointPosition2 = getHit(frame, boxDto.getXMin(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition2);
+
+        // max max
+        Optional<HitResult> pointPosition4 = getHit(frame, boxDto.getXMax(), boxDto.getYMax(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition4);
+
+        // max min
+        Optional<HitResult> pointPosition3 = getHit(frame, boxDto.getXMax(), boxDto.getYMin(), mask.getWidth(), mask.getHeight());
+        pointsOpt.add(pointPosition3);
+
+        if (pointsOpt.stream().allMatch(Optional::isPresent)) {
+            List<Node> points = pointsOpt.stream()
+                    .map(Optional::get)
+                    .map(hitResult -> {
+                        AnchorNode anchorNode = new AnchorNode(hitResult.createAnchor());
+                        currentAnchors.add(anchorNode);
+                        return anchorNode;
+                    })
+                    .collect(Collectors.toList());
+
+            points.forEach(hitResult -> drawPoint(hitResult, boxDto.getClassOfInterest()));
+            rectangleFactory.getSquare(arActivity, points, new Color(boxDto.getClassOfInterest()));
+        }
+    }
+
+    private void drawPoint(Node anchorNode, int labelValue) {
+
+        materialFactoryCache.makeOpaqueWithColor(arActivity, new Color(labelValue))
+                .thenAccept(material -> {
+                    ModelRenderable sphere = ShapeFactory.makeSphere(0.01f, Vector3.zero(), material);
+
+                    anchorNode.setRenderable(sphere);
+                    anchorNode.setParent(arFragment.getArSceneView().getScene());
+                });
     }
 }
