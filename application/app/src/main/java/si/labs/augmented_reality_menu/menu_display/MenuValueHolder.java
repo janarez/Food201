@@ -12,7 +12,7 @@ public class MenuValueHolder {
         this.label = label;
         this.labelValue = labelValue;
 
-        selected = false;
+        selected = true;
     }
 
     @Override

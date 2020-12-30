@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="detected_dishes">Detected dishes</string>
+    <string name="menu_button_sense">Sense</string>
+    <string name="menu_button_save">Save</string>
 </resources>

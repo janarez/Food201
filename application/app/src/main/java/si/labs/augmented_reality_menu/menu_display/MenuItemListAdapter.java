@@ -11,12 +11,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.R;
 
 public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
+    private static final String TAG = MenuItemListAdapter.class.getSimpleName();
     private final Context context;
     private final List<MenuValueHolder> values;
 
@@ -24,6 +26,11 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
         super(context, resource, menuValueHolders);
         this.context = context;
         this.values = menuValueHolders;
+
+        MenuValueHolder textValue = new MenuValueHolder("Labels", 0);
+        textValue.setSelected(false);
+
+        menuValueHolders.add(textValue);
     }
 
     @Override
@@ -37,8 +44,14 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
         return getItemView(position, convertView, parent);
     }
 
+    @Override
+    public boolean isEnabled(int position) {
+        return false;
+    }
+
     private View getItemView(final int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         final LabelCheckboxView labelCheckboxView;
+
         if (convertView == null) {
             LayoutInflater layoutInflater = LayoutInflater.from(context);
             convertView = layoutInflater.inflate(R.layout.menu_list_item, parent, false);
@@ -58,6 +71,10 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
             values.get(checkPosition).setSelected(isChecked);
         });
 
+        if (position == 0) {
+            labelCheckboxView.getCheckBox().setVisibility(View.INVISIBLE);
+        }
+
         return convertView;
     }
 
@@ -69,6 +86,10 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
 
     public List<MenuValueHolder> getValues() {
         return values;
+    }
+
+    public void clearList() {
+        values.retainAll(Collections.singletonList(values.get(0)));
     }
 
     private static class LabelCheckboxView {

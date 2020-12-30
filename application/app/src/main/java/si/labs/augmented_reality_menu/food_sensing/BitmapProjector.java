@@ -22,7 +22,6 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -52,8 +51,6 @@ public class BitmapProjector {
     private final ModelExecutor modelExecutor;
     private final BitmapProcessing bitmapProcessing;
     private final DisplayMetrics displayMetrics;
-    private final long deltaTime; // in millis
-    private long nextProjectionTime; // in millis
 
     private ModelOutput modelOutput;
     private final List<AnchorNode> currentAnchors;
@@ -67,8 +64,6 @@ public class BitmapProjector {
 
         materialFactoryCache = new MaterialFactoryCache();
         rectangleFactory = new RectangleFactory(materialFactoryCache);
-        nextProjectionTime = Calendar.getInstance().getTimeInMillis();
-        deltaTime = 5000;
         currentAnchors = new LinkedList<>();
         squareHolders = new LinkedList<>();
 
@@ -76,16 +71,7 @@ public class BitmapProjector {
         arActivity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
     }
 
-    public void onFrame() {
-
-        long newTime = Calendar.getInstance().getTimeInMillis();
-
-        // don't constantly try to classify
-        if (nextProjectionTime > newTime) {
-            return;
-        } else {
-            nextProjectionTime = deltaTime + newTime;
-        }
+    public void detect() {
 
         // if not tracking then wait
         Frame frame = arFragment.getArSceneView().getArFrame();
@@ -98,7 +84,6 @@ public class BitmapProjector {
             return;
         }
         MenuItemListAdapter menuItemListAdapter = menuItemListAdapterOpt.get();
-        List<MenuValueHolder> selectedValues = menuItemListAdapter.getSelectedValues();
 
         Optional<ModelOutput> modelOutputOpt = getModelOutput(frame);
         if (!modelOutputOpt.isPresent()) {
@@ -106,17 +91,16 @@ public class BitmapProjector {
         }
         modelOutput = modelOutputOpt.get();
         updateMenuRenderable(modelOutput, menuItemListAdapter);
+        List<MenuValueHolder> selectedValues = menuItemListAdapter.getSelectedValues();
 
         projectPoints(frame, selectedValues);
     }
 
     private Optional<HitResult> getTheOptimalHit(List<HitResult> hits) {
         return hits.stream()
-//                .filter(hitResult -> hitResult.getDistance() < maxDepth)
-//                .filter(hitResult -> hitResult.getDistance() > minDepth)
                 .filter(hitResult -> {
                     Trackable trackable = hitResult.getTrackable();
-                    return trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose());
+                    return trackable instanceof Plane; // TODO  && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose());
                 })
                 .min(Comparator.comparingDouble(HitResult::getDistance));
     }
@@ -162,6 +146,7 @@ public class BitmapProjector {
 
         Set<Integer> labelsOfInterest = selectedLabels.stream()
                 .map(MenuValueHolder::getLabelValue)
+                .filter(integer -> integer != 0)
                 .collect(Collectors.toSet());
         Bitmap mask = modelOutput.getMask();
 
@@ -182,21 +167,17 @@ public class BitmapProjector {
 
     private void updateMenuRenderable(ModelOutput modelOutput, MenuItemListAdapter menuItemListAdapter) {
         Set<MenuValueHolder> valueHolders = new HashSet<>();
-        for (MenuValueHolder value : menuItemListAdapter.getValues()) {
-            if (value.isSelected()) {
-                valueHolders.add(value);
-            }
-        }
         for (LabelValueNamePair label : modelOutput.getLabels()) {
-            valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+            if (label.getLabelValue() != 0) {
+                valueHolders.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+            }
         }
 
         List<MenuValueHolder> values = new ArrayList<>(valueHolders);
         values.sort(Comparator.comparing(MenuValueHolder::getLabel));
 
-        menuItemListAdapter.getValues().clear();
+        menuItemListAdapter.clearList();
         menuItemListAdapter.addAll(valueHolders);
-        menuItemListAdapter.notifyDataSetChanged();
     }
 
     private void drawRectangle(Frame frame, Bitmap mask, BoundingBoxDto boxDto) {

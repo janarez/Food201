@@ -60,5 +60,5 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
     // Tensorflow Ops.
     // TODO: Delete if the preprocessing layers are removed. Also the abifilter.
-    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0nn'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0'
 }
