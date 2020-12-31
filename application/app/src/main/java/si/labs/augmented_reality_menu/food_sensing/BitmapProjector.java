@@ -8,8 +8,6 @@ import android.util.Log;
 
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
-import com.google.ar.core.Plane;
-import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
@@ -98,10 +96,6 @@ public class BitmapProjector {
 
     private Optional<HitResult> getTheOptimalHit(List<HitResult> hits) {
         return hits.stream()
-                .filter(hitResult -> {
-                    Trackable trackable = hitResult.getTrackable();
-                    return trackable instanceof Plane; // TODO  && ((Plane) trackable).isPoseInPolygon(hitResult.getHitPose());
-                })
                 .min(Comparator.comparingDouble(HitResult::getDistance));
     }
 

@@ -2,6 +2,7 @@ package si.labs.augmented_reality_menu.menu_display;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Window;
 import android.widget.Button;
@@ -13,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import si.labs.augmented_reality_menu.HistoryActivity;
 import si.labs.augmented_reality_menu.R;
 import si.labs.augmented_reality_menu.persistence.AppDatabase;
 import si.labs.augmented_reality_menu.persistence.FoodHistory;
@@ -41,9 +43,17 @@ public class MainMenuDialog extends Dialog {
 
         Button saveButton = findViewById(R.id.main_menu_save_labels_button);
         saveButton.setOnClickListener(v -> saveFoodHistory());
+
+        Button openHistoryMenuButton = findViewById(R.id.main_menu_view_history_button);
+        openHistoryMenuButton.setOnClickListener(v -> openHistoryMenu());
     }
 
-    void saveFoodHistory() {
+    private void openHistoryMenu() {
+        Intent openHistoryActivityIntent = new Intent(context, HistoryActivity.class);
+        context.startActivity(openHistoryActivityIntent);
+    }
+
+    private void saveFoodHistory() {
         List<MenuValueHolder> detectedLabels = listAdapter.getValues();
         String concatenatedLabels = detectedLabels.stream().map(MenuValueHolder::getLabel).collect(Collectors.joining(", "));
         FoodHistory foodHistory = new FoodHistory();

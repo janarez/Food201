@@ -49,7 +49,7 @@ public class ARActivity extends AppCompatActivity {
         labelMenuButton.setOnClickListener(v -> labelMenuDialog.show());
 
         Button mainMenuButton = findViewById(R.id.ar_open_main_menu_button);
-        MainMenuDialog mainMenuDialog = new MainMenuDialog(this);
+        MainMenuDialog mainMenuDialog = new MainMenuDialog(this, menuItemListAdapter);
         mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
 
         BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
