@@ -3,9 +3,7 @@ package si.labs.augmented_reality_menu.persistence;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 @Entity(tableName = "food_history")
 public class FoodHistory {
@@ -13,8 +11,11 @@ public class FoodHistory {
     @PrimaryKey(autoGenerate = true)
     private long id;
 
-    private Instant timeOfSaving;
-    private List<String> consumedFood;
+    private Date timeOfSaving;
+    private String consumedFood;
+
+    public FoodHistory() {
+    }
 
     public long getId() {
         return id;
@@ -24,23 +25,19 @@ public class FoodHistory {
         this.id = id;
     }
 
-    public Instant getTimeOfSaving() {
+    public Date getTimeOfSaving() {
         return timeOfSaving;
     }
 
-    public void setTimeOfSaving(Instant timeOfSaving) {
+    public void setTimeOfSaving(Date timeOfSaving) {
         this.timeOfSaving = timeOfSaving;
     }
 
-    public List<String> getConsumedFood() {
-        if (consumedFood == null) {
-            return new ArrayList<>();
-        }
-
+    public String getConsumedFood() {
         return consumedFood;
     }
 
-    public void setConsumedFood(List<String> consumedFood) {
+    public void setConsumedFood(String consumedFood) {
         this.consumedFood = consumedFood;
     }
 }

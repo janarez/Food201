@@ -11,7 +11,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,11 +25,6 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
         super(context, resource, menuValueHolders);
         this.context = context;
         this.values = menuValueHolders;
-
-        MenuValueHolder textValue = new MenuValueHolder("Labels", 0);
-        textValue.setSelected(false);
-
-        menuValueHolders.add(textValue);
     }
 
     @Override
@@ -71,10 +65,6 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
             values.get(checkPosition).setSelected(isChecked);
         });
 
-        if (position == 0) {
-            labelCheckboxView.getCheckBox().setVisibility(View.INVISIBLE);
-        }
-
         return convertView;
     }
 
@@ -89,7 +79,7 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
     }
 
     public void clearList() {
-        values.retainAll(Collections.singletonList(values.get(0)));
+        values.clear();
     }
 
     private static class LabelCheckboxView {

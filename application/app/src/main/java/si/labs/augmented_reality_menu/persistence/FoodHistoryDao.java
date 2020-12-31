@@ -11,7 +11,7 @@ import java.util.List;
 public interface FoodHistoryDao {
 
     @Query("SELECT * FROM food_history")
-    List<FoodHistoryDao> getAll();
+    List<FoodHistory> getAll();
 
     @Insert
     void insertAll(FoodHistory... foodHistories);

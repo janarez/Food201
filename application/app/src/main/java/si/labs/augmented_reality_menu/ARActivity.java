@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,6 +17,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 
 import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
+import si.labs.augmented_reality_menu.menu_display.MenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 
@@ -41,9 +41,11 @@ public class ARActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        Spinner menuSpinner = findViewById(R.id.menu_spinner);
         menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
-        menuSpinner.setAdapter(menuItemListAdapter);
+        Button menuSpinner = findViewById(R.id.menu_spinner);
+        MenuDialog menuDialog = new MenuDialog(this, menuItemListAdapter);
+        menuSpinner.setOnClickListener(v -> menuDialog.show());
+
         BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
 
         Button resenseButton = findViewById(R.id.menu_resense_button);

@@ -7,12 +7,11 @@
     android:id="@+id/aractivity_constraint_layout"
     tools:context=".ARActivity">
 
-    <Spinner
+    <Button
         android:id="@+id/menu_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-
-        android:spinnerMode="dialog"
+        android:text="@string/menu_labels_button"
         app:layout_constraintBottom_toTopOf="@id/ux_fragment"
         app:layout_constraintEnd_toStartOf="@id/menu_resense_button"
         app:layout_constraintStart_toStartOf="parent"

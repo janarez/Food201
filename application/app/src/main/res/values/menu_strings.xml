@@ -3,4 +3,5 @@
     <string name="detected_dishes">Detected dishes</string>
     <string name="menu_button_sense">Sense</string>
     <string name="menu_button_save">Save</string>
+    <string name="menu_labels_button">Labels</string>
 </resources>
