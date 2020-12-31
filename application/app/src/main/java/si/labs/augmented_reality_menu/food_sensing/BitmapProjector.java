@@ -91,7 +91,7 @@ public class BitmapProjector {
         }
         modelOutput = modelOutputOpt.get();
         updateMenuRenderable(modelOutput, menuItemListAdapter);
-        List<MenuValueHolder> selectedValues = menuItemListAdapter.getSelectedValues();
+        List<MenuValueHolder> selectedValues = menuItemListAdapter.getValues();
 
         projectPoints(frame, selectedValues);
     }

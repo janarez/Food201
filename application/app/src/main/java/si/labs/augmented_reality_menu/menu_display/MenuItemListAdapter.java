@@ -5,14 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.R;
 
@@ -50,7 +48,7 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
             LayoutInflater layoutInflater = LayoutInflater.from(context);
             convertView = layoutInflater.inflate(R.layout.menu_list_item, parent, false);
             labelCheckboxView = new LabelCheckboxView();
-            labelCheckboxView.setCheckBox(convertView.findViewById(R.id.menu_item_checkbox));
+            labelCheckboxView.setColourDisplay(convertView.findViewById(R.id.menu_item_colour_check));
             labelCheckboxView.setTextView(convertView.findViewById(R.id.menu_item_text));
             convertView.setTag(labelCheckboxView);
         } else {
@@ -58,20 +56,9 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
         }
 
         labelCheckboxView.getTextView().setText(values.get(position).getLabel());
-        labelCheckboxView.getCheckBox().setChecked(values.get(position).isSelected());
-        labelCheckboxView.getCheckBox().setTag(position);
-        labelCheckboxView.getCheckBox().setOnCheckedChangeListener((buttonView, isChecked) -> {
-            int checkPosition = (Integer) buttonView.getTag();
-            values.get(checkPosition).setSelected(isChecked);
-        });
+        labelCheckboxView.getColourDisplay().setBackgroundColor(values.get(position).getLabelValue());
 
         return convertView;
-    }
-
-    public List<MenuValueHolder> getSelectedValues() {
-        return getValues().stream()
-                .filter(MenuValueHolder::isSelected)
-                .collect(Collectors.toList());
     }
 
     public List<MenuValueHolder> getValues() {
@@ -84,7 +71,7 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
 
     private static class LabelCheckboxView {
         private TextView textView;
-        private CheckBox checkBox;
+        private TextView colourDisplay;
 
         public TextView getTextView() {
             return textView;
@@ -94,12 +81,12 @@ public class MenuItemListAdapter extends ArrayAdapter<MenuValueHolder> {
             this.textView = textView;
         }
 
-        public CheckBox getCheckBox() {
-            return checkBox;
+        public TextView getColourDisplay() {
+            return colourDisplay;
         }
 
-        public void setCheckBox(CheckBox checkBox) {
-            this.checkBox = checkBox;
+        public void setColourDisplay(TextView colourDisplay) {
+            this.colourDisplay = colourDisplay;
         }
     }
 }

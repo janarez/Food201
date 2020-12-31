@@ -6,13 +6,9 @@ public class MenuValueHolder {
     private final String label;
     private final int labelValue;
 
-    private boolean selected;
-
     public MenuValueHolder(String label, int labelValue) {
         this.label = label;
         this.labelValue = labelValue;
-
-        selected = true;
     }
 
     @Override
@@ -35,13 +31,5 @@ public class MenuValueHolder {
 
     public int getLabelValue() {
         return labelValue;
-    }
-
-    public boolean isSelected() {
-        return selected;
-    }
-
-    public void setSelected(boolean selected) {
-        this.selected = selected;
     }
 }
