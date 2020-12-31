@@ -10,10 +10,10 @@ import androidx.annotation.NonNull;
 
 import si.labs.augmented_reality_menu.R;
 
-public class MenuDialog extends Dialog {
+public class LabelMenuDialog extends Dialog {
     private final MenuItemListAdapter listAdapter;
 
-    public MenuDialog(@NonNull Context context, MenuItemListAdapter listAdapter) {
+    public LabelMenuDialog(@NonNull Context context, MenuItemListAdapter listAdapter) {
         super(context);
 
         this.listAdapter = listAdapter;

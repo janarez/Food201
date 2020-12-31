@@ -17,7 +17,8 @@ import java.util.LinkedList;
 import java.util.Optional;
 
 import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
-import si.labs.augmented_reality_menu.menu_display.MenuDialog;
+import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
+import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 
@@ -42,9 +43,14 @@ public class ARActivity extends AppCompatActivity {
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
-        Button menuSpinner = findViewById(R.id.menu_spinner);
-        MenuDialog menuDialog = new MenuDialog(this, menuItemListAdapter);
-        menuSpinner.setOnClickListener(v -> menuDialog.show());
+
+        Button labelMenuButton = findViewById(R.id.label_menu_button);
+        LabelMenuDialog labelMenuDialog = new LabelMenuDialog(this, menuItemListAdapter);
+        labelMenuButton.setOnClickListener(v -> labelMenuDialog.show());
+
+        Button mainMenuButton = findViewById(R.id.ar_open_main_menu_button);
+        MainMenuDialog mainMenuDialog = new MainMenuDialog(this);
+        mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
 
         BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
 
