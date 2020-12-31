@@ -4,14 +4,30 @@ import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.Window;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
+import androidx.room.Room;
+
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.R;
+import si.labs.augmented_reality_menu.persistence.AppDatabase;
+import si.labs.augmented_reality_menu.persistence.FoodHistory;
+import si.labs.augmented_reality_menu.persistence.FoodHistoryDao;
 
 public class MainMenuDialog extends Dialog {
-    public MainMenuDialog(@NonNull Context context) {
+
+    private final Context context;
+    private final MenuItemListAdapter listAdapter;
+    private FoodHistoryDao foodHistoryDao;
+
+    public MainMenuDialog(@NonNull Context context, MenuItemListAdapter listAdapter) {
         super(context);
+        this.context = context;
+        this.listAdapter = listAdapter;
     }
 
     @Override
@@ -19,5 +35,21 @@ public class MainMenuDialog extends Dialog {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.ar_activity_main_menu_popup);
+
+        AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "food-db").build();
+        foodHistoryDao = db.foodHistoryDao();
+
+        Button saveButton = findViewById(R.id.main_menu_save_labels_button);
+        saveButton.setOnClickListener(v -> saveFoodHistory());
+    }
+
+    void saveFoodHistory() {
+        List<MenuValueHolder> detectedLabels = listAdapter.getValues();
+        String concatenatedLabels = detectedLabels.stream().map(MenuValueHolder::getLabel).collect(Collectors.joining(", "));
+        FoodHistory foodHistory = new FoodHistory();
+        foodHistory.setConsumedFood(concatenatedLabels);
+        foodHistory.setTimeOfSaving(new Date());
+
+        foodHistoryDao.insertAll(foodHistory);
     }
 }
