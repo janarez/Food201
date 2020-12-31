@@ -21,7 +21,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Augmented_reality_menu">
-        <activity android:name=".ARActivity">
+        <activity
+            android:name=".HistoryActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ARActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

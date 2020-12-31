@@ -5,20 +5,20 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ListView;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 
 import java.util.LinkedList;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
-import si.labs.augmented_reality_menu.menu_display.DisplayOnPlaneTapImpl;
+import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
+import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
 import si.labs.augmented_reality_menu.model.ModelExecutor;
 
@@ -27,8 +27,6 @@ public class ARActivity extends AppCompatActivity {
     private static final String TAG = ARActivity.class.getSimpleName();
 
     private ArFragment arFragment;
-    private ViewRenderable menuRenderable;
-    private ModelExecutor modelExecutor;
     private MenuItemListAdapter menuItemListAdapter;
 
     @Override
@@ -40,34 +38,28 @@ public class ARActivity extends AppCompatActivity {
         }
 
         // Loads and then runs model on AR camera images.
-        modelExecutor = new ModelExecutor(getApplicationContext());
+        ModelExecutor modelExecutor = new ModelExecutor(getApplicationContext());
 
         setContentView(R.layout.activity_a_r);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+        menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
 
-        BitmapProjector bitmapProjector;
-        if (arFragment != null) {
-            bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
-            arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> bitmapProjector.onFrame());
-            menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
-            arFragment.setOnTapArPlaneListener(new DisplayOnPlaneTapImpl(arFragment, this));
-        } else {
-            throw new RuntimeException("AR fragment is null");
-        }
+        Button labelMenuButton = findViewById(R.id.label_menu_button);
+        LabelMenuDialog labelMenuDialog = new LabelMenuDialog(this, menuItemListAdapter);
+        labelMenuButton.setOnClickListener(v -> labelMenuDialog.show());
 
-        CompletableFuture<ViewRenderable> menuRenderableFuture =
-                ViewRenderable.builder().setView(this, R.layout.menu_layout_a_r).build();
+        Button mainMenuButton = findViewById(R.id.ar_open_main_menu_button);
+        MainMenuDialog mainMenuDialog = new MainMenuDialog(this, menuItemListAdapter);
+        mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
 
-        menuRenderableFuture.handle((viewRenderable, throwable) -> {
-            if (throwable != null) {
-                Toast.makeText(this, R.string.error_creating_menu_view, Toast.LENGTH_LONG)
-                        .show();
-                Log.e(TAG, getResources().getString(R.string.error_creating_menu_view), throwable);
-            }
-            initMenuRenderable(viewRenderable);
-            menuRenderable = viewRenderable;
-            return null;
-        });
+        BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
+
+        Button resenseButton = findViewById(R.id.menu_resense_button);
+        resenseButton.setOnClickListener(v -> bitmapProjector.detect());
+
+        // required so that spinners do not break full screen
+        // TODO doesn't help
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     }
 
     @Override
@@ -101,16 +93,7 @@ public class ARActivity extends AppCompatActivity {
         return true;
     }
 
-    public Optional<ViewRenderable> getMenuRenderable() {
-        return Optional.ofNullable(menuRenderable);
-    }
-
     public Optional<MenuItemListAdapter> getMenuListAdapter() {
         return Optional.ofNullable(menuItemListAdapter);
-    }
-
-    private void initMenuRenderable(ViewRenderable menuRenderable) {
-        ListView menuListView = menuRenderable.getView().findViewById(R.id.menu_list_view);
-        menuListView.setAdapter(menuItemListAdapter);
     }
 }

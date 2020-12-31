@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="detected_dishes">Detected dishes</string>
+    <string name="menu_button_sense">Sense</string>
+    <string name="menu_button_menu_popup">Menu</string>
+    <string name="menu_labels_button">Labels</string>
+
+    <string name="main_menu_save_labels">Save labels</string>
+    <string name="view_label_history">View history</string>
 </resources>

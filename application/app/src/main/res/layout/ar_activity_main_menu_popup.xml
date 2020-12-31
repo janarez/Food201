@@ -4,20 +4,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/menu_item_text"
-        android:layout_width="wrap_content"
+    <Button
+        android:id="@+id/main_menu_save_labels_button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        app:layout_constraintEnd_toStartOf="@+id/menu_item_colour_check"
+        android:text="@string/main_menu_save_labels"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/menu_item_colour_check"
-        android:layout_width="100dp"
+    <Button
+        android:id="@+id/main_menu_view_history_button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="@string/view_label_history"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/main_menu_save_labels_button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

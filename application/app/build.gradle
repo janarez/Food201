@@ -60,5 +60,10 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
     // Tensorflow Ops.
     // TODO: Delete if the preprocessing layers are removed. Also the abifilter.
-    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0nn'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0'
+
+    // persistence
+    def room_version = "2.2.6"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
 }
