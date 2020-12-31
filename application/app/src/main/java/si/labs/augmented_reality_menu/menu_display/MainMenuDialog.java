@@ -4,14 +4,18 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.room.Room;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import si.labs.augmented_reality_menu.HistoryActivity;
@@ -22,6 +26,7 @@ import si.labs.augmented_reality_menu.persistence.FoodHistoryDao;
 
 public class MainMenuDialog extends Dialog {
 
+    private static final String TAG = MainMenuDialog.class.getSimpleName();
     private final Context context;
     private final MenuItemListAdapter listAdapter;
     private FoodHistoryDao foodHistoryDao;
@@ -60,6 +65,20 @@ public class MainMenuDialog extends Dialog {
         foodHistory.setConsumedFood(concatenatedLabels);
         foodHistory.setTimeOfSaving(new Date());
 
-        foodHistoryDao.insertAll(foodHistory);
+        CompletableFuture<Void> makeToast = new CompletableFuture<>();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            foodHistoryDao.insertAll(foodHistory);
+            makeToast.complete(null);
+        });
+
+        makeToast.handle((aVoid, throwable) -> {
+            if (throwable == null) {
+                Toast.makeText(context, "Saved successfully", Toast.LENGTH_LONG).show();
+            } else {
+                Log.e(TAG, throwable.getMessage());
+            }
+            return null;
+        });
     }
 }
