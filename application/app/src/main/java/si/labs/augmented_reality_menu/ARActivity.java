@@ -3,8 +3,8 @@ package si.labs.augmented_reality_menu;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -36,12 +36,14 @@ public class ARActivity extends AppCompatActivity {
     private String[] requiredPermissions;
     private PreviewView previewView;
     private ExecutorService cameraExecutor;
+    private ImageView maskOverlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_r);
         previewView = findViewById(R.id.preview_view);
+        maskOverlay = findViewById(R.id.mask_overlay);
 
         requiredPermissions = new String[]{Manifest.permission.CAMERA};
 
@@ -81,7 +83,7 @@ public class ARActivity extends AppCompatActivity {
 
             ImageAnalysis analysis = new ImageAnalysis.Builder().build();
             analysis.setAnalyzer(cameraExecutor, new MaskProjector(this, modelOutput -> {
-                Log.d(TAG, modelOutput.labelsAsSingleString());
+                runOnUiThread(() -> maskOverlay.setImageBitmap(modelOutput.getMask()));
             }));
 
             try {
