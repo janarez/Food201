@@ -67,8 +67,6 @@ public class ARActivity extends AppCompatActivity {
         Button mainMenuButton = findViewById(R.id.ar_open_main_menu_button);
         MainMenuDialog mainMenuDialog = new MainMenuDialog(this, menuItemListAdapter);
         mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
-
-        Button resenseButton = findViewById(R.id.menu_resense_button);
     }
 
     @Override
