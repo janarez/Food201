@@ -1,6 +1,9 @@
 package si.labs.augmented_reality_menu.model;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
 import android.media.Image;
 
 import java.nio.ByteBuffer;
@@ -48,7 +51,32 @@ public class ImageUtils {
                 argbArray[yIndex] = (255 << 24) | (r & 255) << 16 | (g & 255) << 8 | (b & 255);
             }
         }
-        return Bitmap.createBitmap(argbArray, imageWidth, imageHeight, Bitmap.Config.ARGB_8888);
+
+        Bitmap bitmap = Bitmap.createBitmap(argbArray, imageWidth, imageHeight, Bitmap.Config.ARGB_8888);
+        Bitmap padded;
+
+        if (bitmap.getWidth() > bitmap.getHeight()) {
+            int padding = (bitmap.getWidth() - bitmap.getHeight()) / 2;
+
+            padded = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getWidth(), bitmap.getConfig());
+            Canvas canvas = new Canvas(padded);
+            canvas.drawColor(Color.BLACK);
+            canvas.drawBitmap(bitmap, 0, padding, null);
+        } else if (bitmap.getWidth() < bitmap.getHeight()) {
+            int padding = (bitmap.getHeight() - bitmap.getWidth()) / 2;
+
+            padded = Bitmap.createBitmap(bitmap.getHeight(), bitmap.getHeight(), bitmap.getConfig());
+            Canvas canvas = new Canvas(padded);
+            canvas.drawColor(Color.BLACK);
+            canvas.drawBitmap(bitmap, padding, 0, null);
+        } else {
+            padded = bitmap;
+        }
+
+        Matrix rotation = new Matrix();
+        rotation.setRotate(90);
+
+        return Bitmap.createBitmap(padded, 0, 0, padded.getWidth(), padded.getHeight(), rotation, false);
     }
 
     /**

@@ -65,9 +65,9 @@ public class ModelExecutor {
         // Image preprocessing.
         long preprocessTime = System.currentTimeMillis();
         // Save original dimensions for resizing mask.
-        int originalHeight = image.getHeight();
-        int originalWidth = image.getWidth();
         Bitmap inputBitmap = ImageUtils.fromYuvImageToRgbBitmap(image);
+        int originalHeight = inputBitmap.getHeight();
+        int originalWidth = inputBitmap.getWidth();
         ByteBuffer inputBuffer = preprocessImage(inputBitmap);  // the original image
         preprocessTime = System.currentTimeMillis() - preprocessTime;
         Log.d(TAG, String.format("Image preprocessing took %d ms", preprocessTime));
@@ -166,7 +166,6 @@ public class ModelExecutor {
                 new ImageProcessor.Builder()
                         // Just resizing, [0,1] transform is model layer.
                         .add(new ResizeOp(IMAGE_HEIGHT, IMAGE_WIDTH, ResizeOp.ResizeMethod.BILINEAR))
-                        // TODO: Add rotation (from landscape)? Or not necessary?
                         .build();
 
         // Push bitmap to TensorImage to apply processing.
