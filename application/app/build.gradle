@@ -50,6 +50,10 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
+//    // android X activity
+//    def activity_version = "1.1.0"
+//    implementation "androidx.activity:activity:$activity_version"
+
     // cameraX
     def camerax_version = '1.0.0-rc01'
     // CameraX core library using camera2 implementation
