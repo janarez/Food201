@@ -8,10 +8,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
 
 import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
@@ -24,6 +31,7 @@ public class ARActivity extends AppCompatActivity {
 
     private MenuItemListAdapter menuItemListAdapter;
     private String[] requiredPermissions;
+    private PreviewView previewView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +63,22 @@ public class ARActivity extends AppCompatActivity {
     }
 
     private void startCamera() {
+        ListenableFuture<ProcessCameraProvider> cameraProviderFut = ProcessCameraProvider.getInstance(this);
+        cameraProviderFut.addListener(() -> {
+            Preview preview = new Preview.Builder().build();
+            previewView = findViewById(R.id.preview_view);
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+            CameraSelector selector = CameraSelector.DEFAULT_BACK_CAMERA;
 
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFut.get();
+                cameraProvider.unbindAll();
+
+                cameraProvider.bindToLifecycle(this, selector, preview);
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }, ContextCompat.getMainExecutor(this));
     }
 
     private boolean allPermissionsGranted() {
