@@ -11,12 +11,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.ar.sceneform.ux.ArFragment;
-
 import java.util.LinkedList;
 import java.util.Optional;
 
-import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
 import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
@@ -26,7 +23,6 @@ public class ARActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
     private static final String TAG = ARActivity.class.getSimpleName();
 
-    private ArFragment arFragment;
     private MenuItemListAdapter menuItemListAdapter;
 
     @Override
@@ -41,7 +37,6 @@ public class ARActivity extends AppCompatActivity {
         ModelExecutor modelExecutor = new ModelExecutor(getApplicationContext());
 
         setContentView(R.layout.activity_a_r);
-        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
 
         Button labelMenuButton = findViewById(R.id.label_menu_button);
@@ -52,22 +47,11 @@ public class ARActivity extends AppCompatActivity {
         MainMenuDialog mainMenuDialog = new MainMenuDialog(this, menuItemListAdapter);
         mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
 
-        BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
-
         Button resenseButton = findViewById(R.id.menu_resense_button);
-        resenseButton.setOnClickListener(v -> bitmapProjector.detect());
 
         // required so that spinners do not break full screen
         // TODO doesn't help
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (arFragment != null) {
-            arFragment.onDestroy();
-        }
     }
 
     /**
