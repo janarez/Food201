@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +29,8 @@ import si.labs.augmented_reality_menu.food_sensing.MaskProjector;
 import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
+import si.labs.augmented_reality_menu.menu_display.MenuValueHolder;
+import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 
 public class ARActivity extends AppCompatActivity {
     private static final String TAG = ARActivity.class.getSimpleName();
@@ -37,6 +40,7 @@ public class ARActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ExecutorService cameraExecutor;
     private ImageView maskOverlay;
+    private MenuItemListAdapter menuItemListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +58,7 @@ public class ARActivity extends AppCompatActivity {
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor();
-
-        MenuItemListAdapter menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
+        menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
 
         Button labelMenuButton = findViewById(R.id.label_menu_button);
         LabelMenuDialog labelMenuDialog = new LabelMenuDialog(this, menuItemListAdapter);
@@ -83,7 +86,19 @@ public class ARActivity extends AppCompatActivity {
 
             ImageAnalysis analysis = new ImageAnalysis.Builder().build();
             analysis.setAnalyzer(cameraExecutor, new MaskProjector(this, modelOutput -> {
-                runOnUiThread(() -> maskOverlay.setImageBitmap(modelOutput.getMask()));
+
+                runOnUiThread(() -> {
+                    maskOverlay.setImageBitmap(modelOutput.getMask());
+                    menuItemListAdapter.clearList();
+                    List<MenuValueHolder> values = new LinkedList<>();
+                    for (LabelValueNamePair label : modelOutput.getLabels()) {
+                        if (label.getLabelValue() != 0) {
+                            values.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+                        }
+                    }
+
+                    menuItemListAdapter.addAll(values);
+                });
             }));
 
             try {
