@@ -3,12 +3,14 @@ package si.labs.augmented_reality_menu;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -19,23 +21,27 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import si.labs.augmented_reality_menu.food_sensing.MaskProjector;
 import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
-import si.labs.augmented_reality_menu.model.ModelExecutor;
 
 public class ARActivity extends AppCompatActivity {
     private static final String TAG = ARActivity.class.getSimpleName();
     private static final int REQUEST_CODE_PERM = 1000;
 
-    private MenuItemListAdapter menuItemListAdapter;
     private String[] requiredPermissions;
     private PreviewView previewView;
+    private ExecutorService cameraExecutor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_a_r);
+        previewView = findViewById(R.id.preview_view);
 
         requiredPermissions = new String[]{Manifest.permission.CAMERA};
 
@@ -45,11 +51,9 @@ public class ARActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, requiredPermissions, REQUEST_CODE_PERM);
         }
 
-        // Loads and then runs model on AR camera images.
-        ModelExecutor modelExecutor = new ModelExecutor(getApplicationContext());
+        cameraExecutor = Executors.newSingleThreadExecutor();
 
-        setContentView(R.layout.activity_a_r);
-        menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
+        MenuItemListAdapter menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
 
         Button labelMenuButton = findViewById(R.id.label_menu_button);
         LabelMenuDialog labelMenuDialog = new LabelMenuDialog(this, menuItemListAdapter);
@@ -62,19 +66,29 @@ public class ARActivity extends AppCompatActivity {
         Button resenseButton = findViewById(R.id.menu_resense_button);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        cameraExecutor.shutdown();
+    }
+
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFut = ProcessCameraProvider.getInstance(this);
         cameraProviderFut.addListener(() -> {
             Preview preview = new Preview.Builder().build();
-            previewView = findViewById(R.id.preview_view);
             preview.setSurfaceProvider(previewView.getSurfaceProvider());
             CameraSelector selector = CameraSelector.DEFAULT_BACK_CAMERA;
+
+            ImageAnalysis analysis = new ImageAnalysis.Builder().build();
+            analysis.setAnalyzer(cameraExecutor, new MaskProjector(this, modelOutput -> {
+                Log.d(TAG, modelOutput.labelsAsSingleString());
+            }));
 
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFut.get();
                 cameraProvider.unbindAll();
 
-                cameraProvider.bindToLifecycle(this, selector, preview);
+                cameraProvider.bindToLifecycle(this, selector, preview, analysis);
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
