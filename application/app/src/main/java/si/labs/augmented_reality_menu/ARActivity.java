@@ -1,47 +1,63 @@
 package si.labs.augmented_reality_menu;
 
-import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
-import com.google.ar.sceneform.ux.ArFragment;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.LinkedList;
-import java.util.Optional;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import si.labs.augmented_reality_menu.food_sensing.BitmapProjector;
+import si.labs.augmented_reality_menu.food_sensing.MaskProjector;
 import si.labs.augmented_reality_menu.menu_display.LabelMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MainMenuDialog;
 import si.labs.augmented_reality_menu.menu_display.MenuItemListAdapter;
-import si.labs.augmented_reality_menu.model.ModelExecutor;
+import si.labs.augmented_reality_menu.menu_display.MenuValueHolder;
+import si.labs.augmented_reality_menu.model.LabelValueNamePair;
 
 public class ARActivity extends AppCompatActivity {
-    private static final double MIN_OPENGL_VERSION = 3.0;
     private static final String TAG = ARActivity.class.getSimpleName();
+    private static final int REQUEST_CODE_PERM = 1000;
 
-    private ArFragment arFragment;
+    private String[] requiredPermissions;
+    private PreviewView previewView;
+    private ExecutorService cameraExecutor;
+    private ImageView maskOverlay;
     private MenuItemListAdapter menuItemListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_a_r);
+        previewView = findViewById(R.id.preview_view);
+        maskOverlay = findViewById(R.id.mask_overlay);
 
-        if (!checkIsSupportedDeviceOrFinish(this)) {
-            return;
+        requiredPermissions = new String[]{Manifest.permission.CAMERA};
+
+        if (allPermissionsGranted()) {
+            startCamera();
+        } else {
+            ActivityCompat.requestPermissions(this, requiredPermissions, REQUEST_CODE_PERM);
         }
 
-        // Loads and then runs model on AR camera images.
-        ModelExecutor modelExecutor = new ModelExecutor(getApplicationContext());
-
-        setContentView(R.layout.activity_a_r);
-        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
+        cameraExecutor = Executors.newSingleThreadExecutor();
         menuItemListAdapter = new MenuItemListAdapter(this, 0, new LinkedList<>());
 
         Button labelMenuButton = findViewById(R.id.label_menu_button);
@@ -51,49 +67,68 @@ public class ARActivity extends AppCompatActivity {
         Button mainMenuButton = findViewById(R.id.ar_open_main_menu_button);
         MainMenuDialog mainMenuDialog = new MainMenuDialog(this, menuItemListAdapter);
         mainMenuButton.setOnClickListener(v -> mainMenuDialog.show());
-
-        BitmapProjector bitmapProjector = new BitmapProjector(arFragment, this, modelExecutor);
-
-        Button resenseButton = findViewById(R.id.menu_resense_button);
-        resenseButton.setOnClickListener(v -> bitmapProjector.detect());
-
-        // required so that spinners do not break full screen
-        // TODO doesn't help
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (arFragment != null) {
-            arFragment.onDestroy();
-        }
+        cameraExecutor.shutdown();
     }
 
-    /**
-     * Returns false and displays an error message if Sceneform can not run, true if Sceneform can run
-     * on this device.
-     *
-     * <p>Sceneform requires Android N on the device as well as OpenGL 3.0 capabilities.
-     *
-     * <p>Finishes the activity if Sceneform can not run
-     */
-    public static boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
-        String openGlVersionString =
-                ((ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE))
-                        .getDeviceConfigurationInfo()
-                        .getGlEsVersion();
-        if (Double.parseDouble(openGlVersionString) < MIN_OPENGL_VERSION) {
-            Log.e(TAG, "Sceneform requires OpenGL ES 3.0 later");
-            Toast.makeText(activity, "Sceneform requires OpenGL ES 3.0 or later", Toast.LENGTH_LONG)
-                    .show();
-            activity.finish();
-            return false;
+    private void startCamera() {
+        ListenableFuture<ProcessCameraProvider> cameraProviderFut = ProcessCameraProvider.getInstance(this);
+        cameraProviderFut.addListener(() -> {
+            Preview preview = new Preview.Builder().build();
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+            CameraSelector selector = CameraSelector.DEFAULT_BACK_CAMERA;
+
+            ImageAnalysis analysis = new ImageAnalysis.Builder().build();
+            analysis.setAnalyzer(cameraExecutor, new MaskProjector(this, modelOutput -> {
+
+                runOnUiThread(() -> {
+                    maskOverlay.setImageBitmap(modelOutput.getMask());
+                    menuItemListAdapter.clearList();
+                    List<MenuValueHolder> values = new LinkedList<>();
+                    for (LabelValueNamePair label : modelOutput.getLabels()) {
+                        if (label.getLabelValue() != 0) {
+                            values.add(new MenuValueHolder(label.getLabelName(), label.getLabelValue()));
+                        }
+                    }
+
+                    menuItemListAdapter.addAll(values);
+                });
+            }));
+
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFut.get();
+                cameraProvider.unbindAll();
+
+                cameraProvider.bindToLifecycle(this, selector, preview, analysis);
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    private boolean allPermissionsGranted() {
+
+        for (String requiredPermission : requiredPermissions) {
+            if (ContextCompat.checkSelfPermission(this, requiredPermission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
         }
         return true;
     }
 
-    public Optional<MenuItemListAdapter> getMenuListAdapter() {
-        return Optional.ofNullable(menuItemListAdapter);
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CODE_PERM) {
+            if (allPermissionsGranted()) {
+                startCamera();
+            } else {
+                Toast.makeText(this, R.string.error_perm, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        }
     }
 }

@@ -3,15 +3,8 @@
     package="si.labs.augmented_reality_menu">
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <!--
- Limits app visibility in the Google Play Store to ARCore supported devices
-         (https://developers.google.com/ar/discover/supported-devices).
-    -->
     <uses-feature
-        android:name="android.hardware.camera.ar"
-        android:required="true" />
-    <uses-feature
-        android:glEsVersion="0x00030000"
+        android:name="android.hardware.camera.any"
         android:required="true" />
 
     <application
@@ -33,13 +26,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!--
- "AR Required" app, requires "Google Play Services for AR" (ARCore)
-       to be installed, as the app does not include any non-AR features.
-        -->
-        <meta-data
-            android:name="com.google.ar.core"
-            android:value="required" />
     </application>
 
 </manifest>

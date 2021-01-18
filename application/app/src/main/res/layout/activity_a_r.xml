@@ -12,19 +12,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/menu_labels_button"
-        app:layout_constraintBottom_toTopOf="@id/ux_fragment"
-        app:layout_constraintEnd_toStartOf="@id/menu_resense_button"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/menu_resense_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/menu_button_sense"
-        app:layout_constraintBottom_toTopOf="@id/ux_fragment"
+        app:layout_constraintBottom_toTopOf="@id/frame_layout"
         app:layout_constraintEnd_toStartOf="@id/ar_open_main_menu_button"
-        app:layout_constraintStart_toEndOf="@id/label_menu_button"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
@@ -32,17 +22,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/menu_button_menu_popup"
-        app:layout_constraintBottom_toTopOf="@id/ux_fragment"
+        app:layout_constraintBottom_toTopOf="@id/frame_layout"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/menu_resense_button"
+        app:layout_constraintStart_toEndOf="@id/label_menu_button"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <fragment
-        android:id="@+id/ux_fragment"
-        android:name="com.google.ar.sceneform.ux.ArFragment"
-        android:layout_width="match_parent"
+    <FrameLayout
+        android:id="@+id/frame_layout"
         android:layout_height="0dp"
+        android:layout_width="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/label_menu_button" />
+        app:layout_constraintTop_toBottomOf="@id/label_menu_button">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/preview_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ImageView
+            android:id="@+id/mask_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.5"
+            android:contentDescription="@string/mask_overlay"
+            android:scaleType="centerCrop" />
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
