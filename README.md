@@ -26,29 +26,12 @@ This limits the scope of the project considerably. Most importantly, the two imp
 
 Below are results from the original paper [[1]](#1).
 
-CRF?|Context?|Accuracy | Recall | IoU
---- | --- |--- | --- | ---
-0|0|0.71|0.30|0.19
-1|0|0.74|0.32|0.22
-0|1|0.74|0.32|0.23
-1|1|0.76|0.33|0.25
-
-Our preliminary results on validation data.
-
-&nbsp;|Accuracy | Recall | IoU
----|--- | --- | ---
-incl. background|0.56|-|0.12
-excl. background|-|-|0.07
-top 5 classes (excl. bgd) |-|-|0.23
-true classes (excl. bgd) |-|-|0.74
-
-## TODO
-
-1. It is clear from the produced results that the main problem is that the model predicts extraneous labels with low counts. This problem could be address via CRFs and/or the classification context. However, we ruled both approaches out, so the main question is what to do instead.
-
-2. Some image augmentations. Nice, but not as important given point 1. and 3.
-
-3. [DONE (updated results are after 50 epochs)] Train to convergence. The preliminary model has not converged aftech 30 epochs. The model takes around 30 mins per epoch, which greatly restricts my experimentation possibilities given the time available.
+CRF?|Context?|Accuracy |  IoU
+--- | --- |--- |  ---
+0|0|0.71|0.19
+1|0|0.74|0.22
+0|1|0.74|0.23
+1|1|0.76|0.25
 
 ## References
 <a id="1">[1]</a> 
