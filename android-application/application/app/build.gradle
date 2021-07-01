@@ -1,0 +1,78 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.2"
+
+    defaultConfig {
+        applicationId "si.labs.augmented_reality_menu"
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    aaptOptions {
+        // Don't compress tf-lite model.
+        noCompress "tflite"
+    }
+
+    // TODO: Hack. Resolve clashing dependecies (won't build atm).
+    configurations.all {
+        exclude group: 'com.google.flatbuffers', module: 'flatbuffers-java'
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+
+//    // android X activity
+//    def activity_version = "1.1.0"
+//    implementation "androidx.activity:activity:$activity_version"
+
+    // cameraX
+    def camerax_version = '1.0.0-rc01'
+    // CameraX core library using camera2 implementation
+    implementation "androidx.camera:camera-camera2:$camerax_version"
+    // CameraX Lifecycle Library
+    implementation "androidx.camera:camera-lifecycle:$camerax_version"
+    // CameraX View class
+    implementation "androidx.camera:camera-view:1.0.0-alpha20"
+
+    // Tensorflow Lite.
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    // Image to tensor manipulation.
+    implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
+    // Tensorflow Ops.
+    // TODO: Delete if the preprocessing layers are removed. Also the abifilter.
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.4.0'
+
+    // persistence
+    def room_version = "2.2.6"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+}
